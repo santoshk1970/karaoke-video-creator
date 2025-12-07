@@ -1,0 +1,16 @@
+node_modules/
+dist/
+output/
+output-vocals/
+projects/
+*.log
+.DS_Store
+*.mp3
+*.wav
+*.m4a
+*.flac
+*.mp4
+*.avi
+*.mov
+*.backup.json
+web-ui/uploads/

@@ -1,0 +1,8 @@
+Welcome to the lyric sync tool
+This is an example song
+With multiple lines of lyrics
+Each line will get its own timestamp
+And its own beautiful image
+You can customize the styling
+To match your video aesthetic
+Hope you enjoy using this tool
