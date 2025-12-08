@@ -153,38 +153,109 @@ export class ImageGenerator {
         }
         
         // Draw Hindi text (top-left)
-        ctx.fillStyle = style.textColor;
-        ctx.font = `${style.fontSize}px ${style.fontFamily}`;
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'top';
-        
         const hindiLines = this.wrapText(ctx, hindiText, style.width / 2 - padding * 2);
         let hindiY = padding + yOffset;
         const lineHeight = style.fontSize * 1.2;
+        const hindiX = padding + xOffset;
         
-        for (const line of hindiLines) {
-            this.drawLineWithBold(ctx, line, padding + xOffset, hindiY, {...style, textAlign: 'left'});
-            hindiY += lineHeight;
+        // Check if text has bold markers
+        const hasBoldMarkers = /\[([^\]]+)\]/.test(hindiText);
+        
+        if (hasBoldMarkers) {
+            // Use drawLineWithBold for bold text support
+            ctx.fillStyle = style.textColor;
+            ctx.font = `${style.fontSize}px ${style.fontFamily}`;
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+            
+            for (const line of hindiLines) {
+                this.drawLineWithBold(ctx, line, hindiX, hindiY, {...style, textAlign: 'left'});
+                hindiY += lineHeight;
+            }
+        } else {
+            // Use direct fillText for consistent alignment
+            ctx.fillStyle = style.textColor;
+            ctx.font = `${style.fontSize}px ${style.fontFamily}`;
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+            
+            for (const line of hindiLines) {
+                ctx.fillText(line, hindiX, hindiY);
+                hindiY += lineHeight;
+            }
+        }
+        
+        // Draw next line preview if available (right below current Hindi lyric)
+        let nextLineEnglish = '';
+        if (nextLine) {
+            const isInstrumental = /^[♪\s]+.*[♪\s]+$/.test(nextLine.trim());
+            if (!isInstrumental) {
+                // Extract Hindi and English parts from next line
+                const nextLineParts = nextLine.split('|');
+                const nextLineHindi = nextLineParts[0].trim();
+                nextLineEnglish = nextLineParts.length === 2 ? nextLineParts[1].trim() : '';
+                
+                const nextLineFontSize = style.nextLineFontSize || style.fontSize * 0.8;
+                const nextLineColor = style.nextLineColor || '#888888';
+                
+                // Add spacing before next line
+                hindiY += 30;
+                
+                // Draw next Hindi line (left-aligned, same x position as current)
+                ctx.fillStyle = nextLineColor;
+                ctx.font = `${nextLineFontSize}px ${style.fontFamily}`;
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'top';
+                
+                const nextHindiLines = this.wrapText(ctx, nextLineHindi, style.width / 2 - padding * 2);
+                for (const line of nextHindiLines) {
+                    ctx.fillText(line, hindiX, hindiY);
+                    hindiY += nextLineFontSize * 1.2;
+                }
+            }
         }
         
         // Draw English transliteration (bottom-right)
         // Increase font size by 25% (from 0.7 to 0.875 of main font size)
         const translitFontSize = style.transliterationFontSize ? style.transliterationFontSize * 1.25 : style.fontSize * 0.875;
+        
+        // Offset to move text left and up from bottom-right corner
+        const englishXOffset = 100; // Move left from right edge
+        const englishYOffset = 120;  // Move up from bottom edge (increased from 60)
+        const englishX = style.width - padding - englishXOffset; // Fixed x position for alignment
+        
         ctx.fillStyle = style.transliterationColor || '#AAAAAA';
         ctx.font = `${translitFontSize}px ${style.fontFamily}`;
         ctx.textAlign = 'right';
         ctx.textBaseline = 'bottom';
         
-        // Offset to move text left and up from bottom-right corner
-        const englishXOffset = 100; // Move left from right edge
-        const englishYOffset = 120;  // Move up from bottom edge (increased from 60)
-        
         const englishLines = this.wrapText(ctx, englishText, style.width / 2 - padding * 2);
         let englishY = style.height - padding - englishYOffset - (englishLines.length - 1) * translitFontSize * 1.2;
         
         for (const line of englishLines) {
-            ctx.fillText(line, style.width - padding - englishXOffset, englishY);
+            ctx.fillText(line, englishX, englishY);
             englishY += translitFontSize * 1.2;
+        }
+        
+        // Draw next English transliteration (bottom-right, below current English, same x position)
+        if (nextLineEnglish) {
+            const nextLineFontSize = style.nextLineFontSize || style.fontSize * 0.8;
+            const nextEnglishFontSize = nextLineFontSize * 0.85;
+            const nextLineColor = style.nextLineColor || '#888888';
+            
+            // Add spacing after current English
+            englishY += 20;
+            
+            ctx.fillStyle = nextLineColor;
+            ctx.font = `${nextEnglishFontSize}px ${style.fontFamily}`;
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'bottom';
+            
+            const nextEnglishLines = this.wrapText(ctx, nextLineEnglish, style.width / 2 - padding * 2);
+            for (const line of nextEnglishLines) {
+                ctx.fillText(line, englishX, englishY); // Use same englishX
+                englishY += nextEnglishFontSize * 1.2;
+            }
         }
     }
 

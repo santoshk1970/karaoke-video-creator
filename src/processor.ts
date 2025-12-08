@@ -102,7 +102,7 @@ export class LyricSyncProcessor {
                 transliterationFontSize: 56,
                 transliterationColor: '#AAAAAA',
                 nextLineColor: '#888888',
-                nextLineFontSize: 48
+                nextLineFontSize: 64
             }, nextLine);
 
             process.stdout.write(`\r   Progress: ${lyric.index + 1}/${timedLyrics.length}`);
