@@ -21,96 +21,132 @@
         .progress-bar {
             transition: width 0.3s ease;
         }
+        .lyrics-list {
+            max-height: calc(100vh - 200px);
+            overflow-y: auto;
+        }
+        .lyric-item {
+            padding: 12px 16px;
+            border-left: 4px solid transparent;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .lyric-item:hover {
+            background: rgba(103, 126, 234, 0.1);
+        }
+        .lyric-item.current {
+            background: rgba(103, 126, 234, 0.2);
+            border-left-color: #667eea;
+            font-weight: bold;
+        }
+        .lyric-item.marked {
+            opacity: 0.5;
+            text-decoration: line-through;
+        }
     </style>
 </head>
-<body class="h-screen flex items-center justify-center">
-    <div class="w-full max-w-6xl mx-auto p-8">
-        <!-- Header -->
-        <div class="bg-white rounded-t-2xl shadow-2xl p-6 mb-0">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h1 class="text-3xl font-bold text-gray-800">🎵 Timing Tool</h1>
-                    <p class="text-gray-600">Press SPACE when you hear each line</p>
-                </div>
-                <div class="text-right">
-                    <div class="text-4xl font-bold text-purple-600" id="timer">0:00.0</div>
-                    <div class="text-sm text-gray-500">Current Time</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Progress Bar -->
-        <div class="bg-gray-200 h-3 mb-0">
-            <div id="progressBar" class="progress-bar bg-gradient-to-r from-green-400 to-blue-500 h-full" style="width: 0%"></div>
-        </div>
-
-        <!-- Main Display -->
-        <div class="bg-white shadow-2xl p-12 mb-0">
-            <!-- Line Counter -->
-            <div class="text-center mb-8">
-                <div class="inline-block bg-purple-100 rounded-full px-8 py-3">
-                    <span class="text-2xl font-bold text-purple-600">
-                        Line <span id="currentLine">1</span> of <span id="totalLines">0</span>
-                    </span>
-                </div>
-            </div>
-
-            <!-- Lyric Display -->
-            <div class="lyric-box bg-gradient-to-r from-purple-50 to-blue-50 border-4 border-purple-300 rounded-2xl p-12 mb-8 min-h-[200px] flex items-center justify-center">
-                <div class="text-center">
-                    <div class="text-sm text-purple-600 font-semibold mb-4">LISTEN FOR:</div>
-                    <div id="lyricText" class="text-4xl font-bold text-gray-800 leading-relaxed">
-                        Loading...
+<body class="h-screen">
+    <div class="h-screen flex">
+        <!-- Left Panel: Timing Interface -->
+        <div class="w-1/2 p-6 flex flex-col">
+            <!-- Header -->
+            <div class="bg-white rounded-t-2xl shadow-2xl p-4 mb-0">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-800">🎵 Timing Tool</h1>
+                        <p class="text-sm text-gray-600">Press SPACE when you hear each line</p>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-3xl font-bold text-purple-600" id="timer">0:00.0</div>
+                        <div class="text-xs text-gray-500">Current Time</div>
                     </div>
                 </div>
             </div>
 
-            <!-- Progress Info -->
-            <div class="grid grid-cols-3 gap-4 mb-8">
-                <div class="bg-blue-50 rounded-lg p-4 text-center">
-                    <div class="text-3xl font-bold text-blue-600" id="markedCount">0</div>
-                    <div class="text-sm text-gray-600">Marked</div>
+            <!-- Progress Bar -->
+            <div class="bg-gray-200 h-2 mb-0">
+                <div id="progressBar" class="progress-bar bg-gradient-to-r from-green-400 to-blue-500 h-full" style="width: 0%"></div>
+            </div>
+
+            <!-- Main Display -->
+            <div class="bg-white shadow-2xl p-8 mb-0 flex-1 flex flex-col">
+                <!-- Line Counter -->
+                <div class="text-center mb-4">
+                    <div class="inline-block bg-purple-100 rounded-full px-6 py-2">
+                        <span class="text-lg font-bold text-purple-600">
+                            Line <span id="currentLine">1</span> of <span id="totalLines">0</span>
+                        </span>
+                    </div>
                 </div>
-                <div class="bg-green-50 rounded-lg p-4 text-center">
-                    <div class="text-3xl font-bold text-green-600" id="remainingCount">0</div>
-                    <div class="text-sm text-gray-600">Remaining</div>
+
+                <!-- Lyric Display -->
+                <div class="lyric-box bg-gradient-to-r from-purple-50 to-blue-50 border-4 border-purple-300 rounded-2xl p-8 mb-6 flex-1 flex items-center justify-center">
+                    <div class="text-center">
+                        <div class="text-xs text-purple-600 font-semibold mb-3">LISTEN FOR:</div>
+                        <div id="lyricText" class="text-3xl font-bold text-gray-800 leading-relaxed">
+                            Loading...
+                        </div>
+                    </div>
                 </div>
-                <div class="bg-purple-50 rounded-lg p-4 text-center">
-                    <div class="text-3xl font-bold text-purple-600" id="lastMark">--</div>
-                    <div class="text-sm text-gray-600">Last Mark</div>
+
+                <!-- Progress Info -->
+                <div class="grid grid-cols-3 gap-3 mb-4">
+                    <div class="bg-blue-50 rounded-lg p-3 text-center">
+                        <div class="text-2xl font-bold text-blue-600" id="markedCount">0</div>
+                        <div class="text-xs text-gray-600">Marked</div>
+                    </div>
+                    <div class="bg-green-50 rounded-lg p-3 text-center">
+                        <div class="text-2xl font-bold text-green-600" id="remainingCount">0</div>
+                        <div class="text-xs text-gray-600">Remaining</div>
+                    </div>
+                    <div class="bg-purple-50 rounded-lg p-3 text-center">
+                        <div class="text-2xl font-bold text-purple-600" id="lastMark">--</div>
+                        <div class="text-xs text-gray-600">Last Mark</div>
+                    </div>
+                </div>
+
+                <!-- Instructions -->
+                <div class="grid grid-cols-3 gap-2">
+                    <div class="bg-green-100 border-2 border-green-300 rounded-lg p-2 text-center">
+                        <div class="text-2xl mb-1">⎵</div>
+                        <div class="font-bold text-green-700 text-xs">SPACE</div>
+                        <div class="text-xs text-gray-600">Mark</div>
+                    </div>
+                    <div class="bg-yellow-100 border-2 border-yellow-300 rounded-lg p-2 text-center">
+                        <div class="text-2xl mb-1">⌫</div>
+                        <div class="font-bold text-yellow-700 text-xs">BACK</div>
+                        <div class="text-xs text-gray-600">Undo</div>
+                    </div>
+                    <div class="bg-red-100 border-2 border-red-300 rounded-lg p-2 text-center">
+                        <div class="text-2xl mb-1">Q</div>
+                        <div class="font-bold text-red-700 text-xs">Q KEY</div>
+                        <div class="text-xs text-gray-600">Finish</div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Instructions -->
-            <div class="grid grid-cols-3 gap-4">
-                <div class="bg-green-100 border-2 border-green-300 rounded-lg p-4 text-center">
-                    <div class="text-3xl mb-2">⎵</div>
-                    <div class="font-bold text-green-700">SPACE</div>
-                    <div class="text-xs text-gray-600">Mark timing</div>
-                </div>
-                <div class="bg-yellow-100 border-2 border-yellow-300 rounded-lg p-4 text-center">
-                    <div class="text-3xl mb-2">⌫</div>
-                    <div class="font-bold text-yellow-700">BACKSPACE</div>
-                    <div class="text-xs text-gray-600">Undo last</div>
-                </div>
-                <div class="bg-red-100 border-2 border-red-300 rounded-lg p-4 text-center">
-                    <div class="text-3xl mb-2">Q</div>
-                    <div class="font-bold text-red-700">Q KEY</div>
-                    <div class="text-xs text-gray-600">Finish & Save</div>
+            <!-- Footer -->
+            <div class="bg-white rounded-b-2xl shadow-2xl p-3">
+                <div class="flex items-center justify-between">
+                    <div class="text-xs text-gray-500">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Auto-adjusts -2s
+                    </div>
+                    <button onclick="stopAudio()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">
+                        <i class="fas fa-stop-circle mr-1"></i>Stop
+                    </button>
                 </div>
             </div>
         </div>
 
-        <!-- Footer -->
-        <div class="bg-white rounded-b-2xl shadow-2xl p-4">
-            <div class="flex items-center justify-between">
-                <div class="text-sm text-gray-500">
-                    <i class="fas fa-info-circle mr-2"></i>
-                    Auto-adjusts -2s (reaction time + early display)
-                </div>
-                <button onclick="stopAudio()" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-semibold transition">
-                    <i class="fas fa-stop-circle mr-2"></i>Stop Audio
-                </button>
+        <!-- Right Panel: Full Lyrics List -->
+        <div class="w-1/2 bg-white p-6 overflow-hidden flex flex-col">
+            <div class="mb-4">
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">📝 All Lyrics</h2>
+                <p class="text-sm text-gray-600">Current line is highlighted</p>
+            </div>
+            <div id="lyricsList" class="lyrics-list flex-1 bg-gray-50 rounded-lg p-4">
+                <!-- Lyrics will be populated here -->
             </div>
         </div>
     </div>
@@ -150,6 +186,9 @@
                 lyrics = data.lyrics;
                 document.getElementById('totalLines').textContent = lyrics.length;
                 document.getElementById('remainingCount').textContent = lyrics.length;
+                
+                // Populate lyrics list
+                populateLyricsList();
                 
                 // Load audio
                 audioElement = document.getElementById('audioPlayer');
@@ -202,9 +241,51 @@
             return (Date.now() - startTime) / 1000;
         }
 
+        function populateLyricsList() {
+            const listContainer = document.getElementById('lyricsList');
+            listContainer.innerHTML = '';
+            
+            lyrics.forEach((lyric, index) => {
+                const item = document.createElement('div');
+                item.className = 'lyric-item';
+                item.id = `lyric-item-${index}`;
+                item.innerHTML = `
+                    <div class="flex items-start">
+                        <span class="text-gray-500 font-mono text-sm mr-3 flex-shrink-0">${String(index + 1).padStart(3, '0')}</span>
+                        <span class="flex-1">${lyric}</span>
+                    </div>
+                `;
+                listContainer.appendChild(item);
+            });
+        }
+        
+        function updateLyricsList() {
+            // Remove all highlighting
+            document.querySelectorAll('.lyric-item').forEach(item => {
+                item.classList.remove('current', 'marked');
+            });
+            
+            // Mark completed lines
+            for (let i = 0; i < currentLineIndex; i++) {
+                const item = document.getElementById(`lyric-item-${i}`);
+                if (item) item.classList.add('marked');
+            }
+            
+            // Highlight current line
+            if (currentLineIndex < lyrics.length) {
+                const currentItem = document.getElementById(`lyric-item-${currentLineIndex}`);
+                if (currentItem) {
+                    currentItem.classList.add('current');
+                    // Scroll to current item
+                    currentItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        }
+
         function showCurrentLine() {
             if (currentLineIndex >= lyrics.length) {
                 document.getElementById('lyricText').innerHTML = '🎉 All lines marked!<br><span class="text-2xl">Press Q to finish</span>';
+                updateLyricsList();
                 return;
             }
 
@@ -216,6 +297,9 @@
             // Update progress bar
             const progress = (currentLineIndex / lyrics.length) * 100;
             document.getElementById('progressBar').style.width = progress + '%';
+            
+            // Update lyrics list highlighting
+            updateLyricsList();
         }
 
         function markTime() {

@@ -16,13 +16,15 @@ export interface ImageStyle {
     textShadow?: boolean;
     transliterationFontSize?: number;
     transliterationColor?: string;
+    nextLineColor?: string;
+    nextLineFontSize?: number;
 }
 
 export class ImageGenerator {
     /**
-     * Generate an image with the given text
+     * Generate an image with the given text and optional next line preview
      */
-    async generate(text: string, outputPath: string, style: ImageStyle): Promise<void> {
+    async generate(text: string, outputPath: string, style: ImageStyle, nextLine?: string): Promise<void> {
         const canvas = createCanvas(style.width, style.height);
         const ctx = canvas.getContext('2d');
 
@@ -53,9 +55,9 @@ export class ImageGenerator {
             // Dual language mode
             const hindiText = parts[0].trim();
             const englishText = parts[1].trim();
-            this.drawDualLanguage(ctx, hindiText, englishText, style);
+            this.drawDualLanguage(ctx, hindiText, englishText, style, nextLine);
         } else {
-            // Single language mode (original behavior)
+            // Single language mode with optional next line preview
             // Set text style
             ctx.fillStyle = style.textColor;
             ctx.font = `${style.fontSize}px ${style.fontFamily}`;
@@ -65,9 +67,15 @@ export class ImageGenerator {
             // Handle multi-line text if needed
             const lines = this.wrapText(ctx, text, style.width - (style.padding * 2));
             
+            // Check if we should show next line (not instrumental)
+            const isInstrumental = /^[♪\s]+.*[♪\s]+$/.test(text.trim());
+            const shouldShowNextLine = nextLine && !isInstrumental && !/^[♪\s]+.*[♪\s]+$/.test(nextLine.trim());
+            
             // Calculate vertical position
             const lineHeight = style.fontSize * 1.2;
-            const totalHeight = lines.length * lineHeight;
+            const nextLineHeight = shouldShowNextLine ? (style.nextLineFontSize || style.fontSize * 0.6) * 1.2 : 0;
+            const spacing = shouldShowNextLine ? 40 : 0;
+            const totalHeight = lines.length * lineHeight + (shouldShowNextLine ? nextLineHeight + spacing : 0);
             let y: number;
 
             switch (style.verticalAlign || 'middle') {
@@ -83,11 +91,33 @@ export class ImageGenerator {
                     break;
             }
 
-            // Draw each line with bold support
+            // Draw each line of current text with bold support (highlighted)
             const x = style.width / 2;
             for (const line of lines) {
-                this.drawLineWithBold(ctx, line, x, y, style);
+                this.drawLineWithBold(ctx, line, x, y, style, true); // true = highlighted
                 y += lineHeight;
+            }
+            
+            // Draw next line preview if available
+            if (shouldShowNextLine) {
+                y += spacing;
+                const nextLineFontSize = style.nextLineFontSize || style.fontSize * 0.6;
+                const nextLineColor = style.nextLineColor || '#888888';
+                
+                ctx.fillStyle = nextLineColor;
+                ctx.font = `${nextLineFontSize}px ${style.fontFamily}`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                
+                // Remove transliteration from next line if present
+                const nextLineParts = nextLine!.split('|');
+                const nextLineText = nextLineParts.length === 2 ? nextLineParts[0].trim() : nextLine!;
+                
+                const nextLines = this.wrapText(ctx, nextLineText, style.width - (style.padding * 2));
+                for (const line of nextLines) {
+                    ctx.fillText(line, x, y);
+                    y += nextLineHeight;
+                }
             }
         }
 
@@ -97,9 +127,9 @@ export class ImageGenerator {
     }
 
     /**
-     * Draw dual language text (Hindi top-left, English bottom-right)
+     * Draw dual language text (Hindi top-left, English bottom-right) with optional next line
      */
-    private drawDualLanguage(ctx: CanvasRenderingContext2D, hindiText: string, englishText: string, style: ImageStyle): void {
+    private drawDualLanguage(ctx: CanvasRenderingContext2D, hindiText: string, englishText: string, style: ImageStyle, nextLine?: string): void {
         const padding = style.padding;
         // Horizontal offset to move text right (away from left edge)
         const xOffset = style.textShadow ? 500 : 0;
@@ -161,7 +191,7 @@ export class ImageGenerator {
     /**
      * Draw a line with bold text support using [text] syntax
      */
-    private drawLineWithBold(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, style: ImageStyle): void {
+    private drawLineWithBold(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, style: ImageStyle, isHighlighted: boolean = false): void {
         // Parse text for [bold] markers
         const parts: Array<{text: string, bold: boolean}> = [];
         const regex = /\[([^\]]+)\]|([^\[]+)/g;

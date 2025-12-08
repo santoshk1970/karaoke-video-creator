@@ -1,6 +1,86 @@
 let projectPath = '';
 let audioFileName = '';
 let lyricsFileName = '';
+let projectName = '';
+
+// Check if project is specified in URL
+window.addEventListener('DOMContentLoaded', () => {
+    // Initialize
+    log('🎵 Karaoke Video Creator ready!', 'success');
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    projectName = urlParams.get('project');
+    
+    if (projectName) {
+        // Load existing project
+        loadProject(projectName);
+    } else {
+        // Redirect to projects page if no project specified
+        window.location.href = '/projects.html';
+    }
+});
+
+async function loadProject(name) {
+    try {
+        console.log('=== loadProject START ===');
+        console.log('Project name:', name);
+        
+        // Store project name for API calls
+        projectName = name;
+        projectPath = name; // APIs expect just the project name
+        
+        console.log('Set projectName:', projectName);
+        console.log('Set projectPath:', projectPath);
+        
+        const titleElement = document.getElementById('projectTitle');
+        console.log('titleElement:', titleElement);
+        if (titleElement) {
+            titleElement.textContent = name;
+        }
+        
+        log(`📂 Loaded project: ${name}`, 'success');
+        
+        // Check project status and enable appropriate buttons
+        const response = await fetch(`/api/check-project-status?project=${encodeURIComponent(name)}`);
+        const result = await response.json();
+        
+        console.log('Project status result:', result);
+        
+        if (result.success) {
+            console.log('Project loaded successfully');
+            // Project exists, so always enable timing tool
+            updateStatus(1, 'success');
+            console.log('Enabling btn-time');
+            enableButton('btn-time');
+            console.log('Enabling btn-check-timing');
+            enableButton('btn-check-timing');
+            
+            if (result.hasTimingFiles) {
+                updateStatus(1, 'success');
+                enableButton('btn-images');
+            }
+            
+            if (result.hasImages) {
+                updateStatus(2, 'success');
+                enableButton('btn-apply-timing');
+            }
+            
+            if (result.hasTimestamps) {
+                updateStatus(3, 'success');
+                enableButton('btn-video');
+            }
+            
+            if (result.hasVideo) {
+                updateStatus(4, 'success');
+                enableButton('btn-play');
+            }
+            
+            log(`✓ Project status loaded`, 'info');
+        }
+    } catch (error) {
+        log(`Error loading project: ${error.message}`, 'error');
+    }
+}
 
 // Utility functions
 function log(message, type = 'info') {
@@ -33,7 +113,12 @@ function updateStatus(step, status) {
         'success': '✅',
         'error': '❌'
     };
-    document.getElementById(`status-${step}`).textContent = statusEmoji[status];
+    const el = document.getElementById(`status-${step}`);
+    if (!el) {
+        console.warn(`Status element not found for step`, step);
+        return;
+    }
+    el.textContent = statusEmoji[status];
 }
 
 function enableButton(buttonId) {
@@ -98,32 +183,52 @@ async function setupProject() {
 
 // Step 2: Time Lyrics
 async function timeLyrics() {
+    console.log('=== timeLyrics() START ===');
+    console.log('projectPath:', projectPath);
+    console.log('projectName:', projectName);
+    
+    log('🔍 timeLyrics() called', 'info');
+    log(`🔍 projectPath: ${projectPath}`, 'info');
+    log(`🔍 projectName: ${projectName}`, 'info');
+    
     if (!projectPath) {
-        log('Please setup project first', 'error');
+        console.error('ERROR: No project path set');
+        log('❌ Error: No project path set', 'error');
         return;
     }
+    
+    console.log('Project path is valid, continuing...');
 
-    updateStatus(2, 'running');
+    updateStatus(1, 'running');
     log('Opening timing tool in new window...', 'info');
-    log('💡 Press SPACE when you hear each line (auto-adjusts -1s for reaction time)', 'info');
+    log('💡 Press SPACE when you hear each line (auto-adjusts -2s for reaction time)', 'info');
     
     // Enable kill button while timing is active
     enableButton('btn-kill-audio');
 
     try {
+        console.log('Sending fetch request to /api/time-lyrics');
+        log(`🔍 Sending request to /api/time-lyrics with projectPath: ${projectPath}`, 'info');
+        
         const response = await fetch('/api/time-lyrics', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ projectPath })
         });
+        
+        console.log('Response received, status:', response.status);
+        log(`🔍 Response status: ${response.status}`, 'info');
 
         const result = await response.json();
+        console.log('Response JSON:', result);
 
         if (result.success) {
+            console.log('Success! Opening timing URL:', result.timingUrl);
             log('✓ Opening timing interface...', 'success');
             
             // Open timing page in new window
             const timingWindow = window.open(result.timingUrl, 'timing', 'width=1200,height=900');
+            console.log('Window opened:', timingWindow);
             
             // Poll for completion
             const checkInterval = setInterval(() => {
@@ -408,6 +513,4 @@ async function playVideo() {
     }
 }
 
-// Initialize
-log('🎵 Karaoke Video Creator ready!', 'success');
-log('Upload audio and lyrics files to get started', 'info');
+// Initialization moved to DOMContentLoaded event

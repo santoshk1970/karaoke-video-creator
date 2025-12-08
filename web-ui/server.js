@@ -10,6 +10,11 @@ const upload = multer({ dest: 'uploads/' });
 app.use(express.json());
 app.use(express.static(__dirname));
 
+// Redirect root to projects page
+app.get('/', (req, res) => {
+    res.redirect('/projects.html');
+});
+
 const PROJECTS_DIR = path.join(__dirname, '..', 'projects');
 
 // Ensure projects directory exists
@@ -17,10 +22,96 @@ if (!fs.existsSync(PROJECTS_DIR)) {
     fs.mkdirSync(PROJECTS_DIR, { recursive: true });
 }
 
+// API: List projects
+app.get('/api/list-projects', async (req, res) => {
+    try {
+        const projects = [];
+        const dirs = fs.readdirSync(PROJECTS_DIR);
+
+        for (const dir of dirs) {
+            const projectPath = path.join(PROJECTS_DIR, dir);
+            const stat = fs.statSync(projectPath);
+
+            if (stat.isDirectory()) {
+                const files = fs.readdirSync(projectPath);
+                
+                // Get line count if lyrics exist
+                let lineCount = null;
+                const lyricsPath = path.join(projectPath, 'lyrics.txt');
+                if (fs.existsSync(lyricsPath)) {
+                    const content = fs.readFileSync(lyricsPath, 'utf-8');
+                    lineCount = content.split('\n').filter(l => l.trim()).length;
+                }
+
+                projects.push({
+                    name: dir,
+                    created: stat.mtime.toLocaleDateString(),
+                    files: files,
+                    lineCount
+                });
+            }
+        }
+
+        // Sort by modified time, newest first
+        projects.sort((a, b) => new Date(b.created) - new Date(a.created));
+
+        res.json({ success: true, projects });
+    } catch (error) {
+        res.json({ success: false, error: error.message });
+    }
+});
+
+// API: Delete project
+app.post('/api/delete-project', async (req, res) => {
+    try {
+        const { projectName } = req.body;
+        const projectPath = path.join(PROJECTS_DIR, projectName);
+
+        if (!fs.existsSync(projectPath)) {
+            throw new Error('Project not found');
+        }
+
+        // Delete project directory recursively
+        fs.rmSync(projectPath, { recursive: true, force: true });
+
+        res.json({ success: true });
+    } catch (error) {
+        res.json({ success: false, error: error.message });
+    }
+});
+
+// API: Check project status
+app.get('/api/check-project-status', async (req, res) => {
+    try {
+        const { project } = req.query;
+        const projectPath = path.join(PROJECTS_DIR, project);
+
+        if (!fs.existsSync(projectPath)) {
+            throw new Error('Project not found');
+        }
+
+        const hasTimingFiles = fs.existsSync(path.join(projectPath, 'lyrics-with-timing.txt'));
+        const hasImages = fs.existsSync(path.join(projectPath, 'output', 'images'));
+        const hasTimestamps = fs.existsSync(path.join(projectPath, 'output', 'timestamps.json'));
+        const hasVideo = fs.existsSync(path.join(projectPath, 'output', 'output.mp4'));
+
+        res.json({
+            success: true,
+            hasTimingFiles,
+            hasImages,
+            hasTimestamps,
+            hasVideo
+        });
+    } catch (error) {
+        res.json({ success: false, error: error.message });
+    }
+});
+
 // API: Setup project
 app.post('/api/setup', upload.fields([
     { name: 'audio', maxCount: 1 },
-    { name: 'lyrics', maxCount: 1 }
+    { name: 'lyrics', maxCount: 1 },
+    { name: 'instrumental', maxCount: 1 }
 ]), async (req, res) => {
     try {
         const { projectName } = req.body;
@@ -39,6 +130,14 @@ app.post('/api/setup', upload.fields([
 
         fs.copyFileSync(audioFile.path, audioPath);
         fs.copyFileSync(lyricsFile.path, lyricsPath);
+
+        // Handle optional instrumental file
+        const instrumentalFile = req.files['instrumental'] ? req.files['instrumental'][0] : null;
+        if (instrumentalFile) {
+            const instrumentalPath = path.join(projectPath, 'instrumental.mp3');
+            fs.copyFileSync(instrumentalFile.path, instrumentalPath);
+            fs.unlinkSync(instrumentalFile.path);
+        }
 
         // Clean up temp files
         fs.unlinkSync(audioFile.path);
@@ -77,11 +176,12 @@ app.post('/api/time-lyrics', async (req, res) => {
 app.get('/api/get-project-data', async (req, res) => {
     try {
         const { project } = req.query;
+        const projectPath = path.join(PROJECTS_DIR, project);
         
         // Try to find lyrics file (prefer lyrics-with-transliteration.txt if it exists)
-        let lyricsPath = path.join(project, 'lyrics-with-transliteration.txt');
+        let lyricsPath = path.join(projectPath, 'lyrics-with-transliteration.txt');
         if (!fs.existsSync(lyricsPath)) {
-            lyricsPath = path.join(project, 'lyrics.txt');
+            lyricsPath = path.join(projectPath, 'lyrics.txt');
         }
         if (!fs.existsSync(lyricsPath)) {
             throw new Error('Lyrics file not found');
@@ -118,22 +218,28 @@ app.get('/api/get-project-data', async (req, res) => {
 app.get('/api/get-audio', async (req, res) => {
     try {
         const { project } = req.query;
-        const audioPath = path.join(project, 'audio.mp3');
+        const projectPath = path.join(PROJECTS_DIR, project);
+        const audioPath = path.join(projectPath, 'audio.mp3');
+        
+        console.log('Looking for audio at:', audioPath);
+        console.log('File exists:', fs.existsSync(audioPath));
         
         if (!fs.existsSync(audioPath)) {
-            throw new Error('Audio file not found');
+            throw new Error(`Audio file not found at: ${audioPath}`);
         }
 
         res.sendFile(path.resolve(audioPath));
     } catch (error) {
-        res.status(404).send('Audio not found');
+        console.error('Audio error:', error.message);
+        res.status(404).send(error.message);
     }
 });
 
 // API: Save timing data
 app.post('/api/save-timing', async (req, res) => {
     try {
-        const { projectPath, marks, lyrics } = req.body;
+        const { projectPath: projectName, marks, lyrics } = req.body;
+        const projectPath = path.join(PROJECTS_DIR, projectName);
         
         // Apply -1 second adjustment to all marks (already done in browser, but ensure consistency)
         // The browser already applies -1s, so marks are already adjusted
@@ -216,8 +322,10 @@ app.post('/api/save-timing', async (req, res) => {
 // API: Check if timing is complete
 app.post('/api/check-timing', async (req, res) => {
     try {
-        const { projectPath } = req.body;
+        const { projectPath: projectName } = req.body;
         
+        // Construct absolute path
+        const projectPath = path.join(PROJECTS_DIR, projectName);
         const timingFile = path.join(projectPath, 'lyrics-with-timing.txt');
         const hasTimingFiles = fs.existsSync(timingFile);
         
@@ -248,11 +356,13 @@ app.post('/api/check-timing', async (req, res) => {
 // API: Generate images
 app.post('/api/generate-images', async (req, res) => {
     try {
-        const { projectPath } = req.body;
+        const { projectPath: projectName } = req.body;
         
         res.setHeader('Content-Type', 'text/plain');
         res.setHeader('Transfer-Encoding', 'chunked');
 
+        // Construct absolute paths
+        const projectPath = path.join(PROJECTS_DIR, projectName);
         const audioPath = path.join(projectPath, 'audio.mp3');
         const lyricsPath = path.join(projectPath, 'lyrics-with-timing.txt');
         const outputPath = path.join(projectPath, 'output');
@@ -286,9 +396,14 @@ app.post('/api/generate-images', async (req, res) => {
 // API: Apply timing
 app.post('/api/apply-timing', async (req, res) => {
     try {
-        const { projectPath } = req.body;
+        const { projectPath: projectName } = req.body;
         
+        // Construct absolute path
+        const projectPath = path.join(PROJECTS_DIR, projectName);
         const setTimingScript = path.join(projectPath, 'set-manual-timing.js');
+        
+        console.log('Looking for timing script at:', setTimingScript);
+        console.log('Script exists:', fs.existsSync(setTimingScript));
         
         if (!fs.existsSync(setTimingScript)) {
             throw new Error('Timing script not found. Please complete timing step first.');
@@ -324,11 +439,13 @@ app.post('/api/apply-timing', async (req, res) => {
 // API: Create video
 app.post('/api/create-video', async (req, res) => {
     try {
-        const { projectPath, purge } = req.body;
+        const { projectPath: projectName, purge } = req.body;
         
         res.setHeader('Content-Type', 'text/plain');
         res.setHeader('Transfer-Encoding', 'chunked');
 
+        // Construct absolute paths
+        const projectPath = path.join(PROJECTS_DIR, projectName);
         const audioPath = path.join(projectPath, 'audio.mp3');
         const outputPath = path.join(projectPath, 'output');
 
@@ -366,7 +483,8 @@ app.post('/api/create-video', async (req, res) => {
 // API: Play video
 app.post('/api/play-video', async (req, res) => {
     try {
-        const { projectPath } = req.body;
+        const { projectPath: projectName } = req.body;
+        const projectPath = path.join(PROJECTS_DIR, projectName);
         const videoPath = path.join(projectPath, 'output', 'output.mp4');
 
         if (!fs.existsSync(videoPath)) {

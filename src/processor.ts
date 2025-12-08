@@ -80,9 +80,13 @@ export class LyricSyncProcessor {
             fs.mkdirSync(imagesDir, { recursive: true });
         }
 
-        for (const lyric of timedLyrics) {
+        for (let i = 0; i < timedLyrics.length; i++) {
+            const lyric = timedLyrics[i];
             const filename = `lyric_${String(lyric.index).padStart(3, '0')}.png`;
             const outputPath = path.join(imagesDir, filename);
+            
+            // Get next line if available
+            const nextLine = i < timedLyrics.length - 1 ? timedLyrics[i + 1].text : undefined;
             
             await this.imageGenerator.generate(lyric.text, outputPath, {
                 width: 1920,
@@ -96,8 +100,10 @@ export class LyricSyncProcessor {
                 gradientColors: ['#1a1a3e', '#0f0f23'],
                 textShadow: true,
                 transliterationFontSize: 56,
-                transliterationColor: '#AAAAAA'
-            });
+                transliterationColor: '#AAAAAA',
+                nextLineColor: '#888888',
+                nextLineFontSize: 48
+            }, nextLine);
 
             process.stdout.write(`\r   Progress: ${lyric.index + 1}/${timedLyrics.length}`);
         }

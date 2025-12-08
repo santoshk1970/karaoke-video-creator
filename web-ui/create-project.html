@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Project - Karaoke Video Creator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen p-6">
+        <div class="max-w-4xl mx-auto">
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg shadow-lg p-8 mb-6 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-4xl font-bold mb-2">🎵 Create New Project</h1>
+                        <p class="text-purple-100">Upload your audio and lyrics to get started</p>
+                    </div>
+                    <button onclick="goBack()" 
+                        class="bg-white text-purple-600 hover:bg-purple-50 font-bold py-2 px-4 rounded-lg transition">
+                        <i class="fas fa-arrow-left mr-2"></i>Back
+                    </button>
+                </div>
+            </div>
+
+            <!-- Creation Form -->
+            <div class="bg-white rounded-lg shadow-lg p-8">
+                <form id="createForm" onsubmit="createProject(event)">
+                    <!-- Project Name -->
+                    <div class="mb-6">
+                        <label class="block text-gray-700 font-semibold mb-2">
+                            <i class="fas fa-tag mr-2"></i>Project Name
+                        </label>
+                        <input type="text" id="projectName" required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            placeholder="e.g., My Song Karaoke">
+                        <p class="text-sm text-gray-500 mt-1">Give your project a memorable name</p>
+                    </div>
+
+                    <!-- Audio File (With Vocals) -->
+                    <div class="mb-6">
+                        <label class="block text-gray-700 font-semibold mb-2">
+                            <i class="fas fa-music mr-2"></i>Audio File (With Vocals)
+                        </label>
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-purple-500 transition">
+                            <input type="file" id="audioFile" accept=".mp3,.wav,.m4a" required
+                                class="hidden" onchange="updateFileName('audioFile', 'audioFileName')">
+                            <button type="button" onclick="document.getElementById('audioFile').click()"
+                                class="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-6 rounded-lg transition">
+                                <i class="fas fa-upload mr-2"></i>Choose Audio File
+                            </button>
+                            <p id="audioFileName" class="text-sm text-gray-500 mt-2">No file selected</p>
+                        </div>
+                    </div>
+
+                    <!-- Instrumental Audio (Optional) -->
+                    <div class="mb-6">
+                        <label class="block text-gray-700 font-semibold mb-2">
+                            <i class="fas fa-guitar mr-2"></i>Instrumental Audio (Optional - No Vocals)
+                        </label>
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
+                            <p class="text-sm text-blue-800">
+                                <i class="fas fa-info-circle mr-2"></i>
+                                If you already have a pre-separated instrumental track, upload it here. Otherwise, leave empty and we'll separate vocals for you.
+                            </p>
+                        </div>
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 transition">
+                            <input type="file" id="instrumentalFile" accept=".mp3,.wav,.m4a"
+                                class="hidden" onchange="updateFileName('instrumentalFile', 'instrumentalFileName')">
+                            <button type="button" onclick="document.getElementById('instrumentalFile').click()"
+                                class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg transition">
+                                <i class="fas fa-upload mr-2"></i>Choose Instrumental File
+                            </button>
+                            <p id="instrumentalFileName" class="text-sm text-gray-500 mt-2">No file selected (optional)</p>
+                        </div>
+                    </div>
+
+                    <!-- Lyrics File -->
+                    <div class="mb-6">
+                        <label class="block text-gray-700 font-semibold mb-2">
+                            <i class="fas fa-file-alt mr-2"></i>Lyrics File
+                        </label>
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-3">
+                            <p class="text-sm text-yellow-800">
+                                <i class="fas fa-lightbulb mr-2"></i>
+                                Format: One line per lyric. Use "♪ Instrumental ♪" for instrumental sections. Supports Hindi | Transliteration format.
+                            </p>
+                        </div>
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-purple-500 transition">
+                            <input type="file" id="lyricsFile" accept=".txt" required
+                                class="hidden" onchange="updateFileName('lyricsFile', 'lyricsFileName')">
+                            <button type="button" onclick="document.getElementById('lyricsFile').click()"
+                                class="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-6 rounded-lg transition">
+                                <i class="fas fa-upload mr-2"></i>Choose Lyrics File
+                            </button>
+                            <p id="lyricsFileName" class="text-sm text-gray-500 mt-2">No file selected</p>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="flex gap-4">
+                        <button type="button" onclick="goBack()"
+                            class="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg transition">
+                            <i class="fas fa-times mr-2"></i>Cancel
+                        </button>
+                        <button type="submit"
+                            class="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-bold py-3 px-6 rounded-lg transition">
+                            <i class="fas fa-check mr-2"></i>Create Project
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Progress -->
+                <div id="progress" class="hidden mt-6">
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div class="flex items-center">
+                            <i class="fas fa-spinner fa-spin text-blue-600 text-2xl mr-3"></i>
+                            <div>
+                                <p class="font-semibold text-blue-800">Creating project...</p>
+                                <p id="progressText" class="text-sm text-blue-600">Uploading files...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function updateFileName(inputId, displayId) {
+            const input = document.getElementById(inputId);
+            const display = document.getElementById(displayId);
+            
+            if (input.files.length > 0) {
+                const file = input.files[0];
+                const size = (file.size / 1024 / 1024).toFixed(2);
+                display.textContent = `${file.name} (${size} MB)`;
+                display.classList.add('text-green-600', 'font-semibold');
+            } else {
+                display.textContent = inputId === 'instrumentalFile' ? 'No file selected (optional)' : 'No file selected';
+                display.classList.remove('text-green-600', 'font-semibold');
+            }
+        }
+
+        async function createProject(event) {
+            event.preventDefault();
+
+            const projectName = document.getElementById('projectName').value;
+            const audioFile = document.getElementById('audioFile').files[0];
+            const lyricsFile = document.getElementById('lyricsFile').files[0];
+            const instrumentalFile = document.getElementById('instrumentalFile').files[0];
+
+            if (!projectName || !audioFile || !lyricsFile) {
+                alert('Please fill in all required fields');
+                return;
+            }
+
+            // Show progress
+            document.getElementById('createForm').classList.add('hidden');
+            document.getElementById('progress').classList.remove('hidden');
+
+            const formData = new FormData();
+            formData.append('projectName', projectName);
+            formData.append('audio', audioFile);
+            formData.append('lyrics', lyricsFile);
+            if (instrumentalFile) {
+                formData.append('instrumental', instrumentalFile);
+            }
+
+            try {
+                document.getElementById('progressText').textContent = 'Uploading files...';
+                
+                const response = await fetch('/api/setup', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    document.getElementById('progressText').textContent = 'Project created successfully!';
+                    setTimeout(() => {
+                        window.location.href = `/index.html?project=${encodeURIComponent(projectName)}`;
+                    }, 1000);
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (error) {
+                document.getElementById('progress').classList.add('hidden');
+                document.getElementById('createForm').classList.remove('hidden');
+                alert('Error creating project: ' + error.message);
+            }
+        }
+
+        function goBack() {
+            window.location.href = '/projects.html';
+        }
+    </script>
+</body>
+</html>
