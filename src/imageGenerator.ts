@@ -1,5 +1,6 @@
-import { createCanvas, registerFont, CanvasRenderingContext2D } from 'canvas';
+import { createCanvas, registerFont, CanvasRenderingContext2D, loadImage } from 'canvas';
 import * as fs from 'fs';
+import * as path from 'path';
 
 export interface ImageStyle {
     width: number;
@@ -21,6 +22,19 @@ export interface ImageStyle {
 }
 
 export class ImageGenerator {
+    private instrumentImages: string[] = [];
+    private instrumentImageIndex: number = 0;
+
+    constructor() {
+        // Load instrument images from resources folder
+        const instrumentsDir = path.join(__dirname, '..', 'resources', 'instruments');
+        if (fs.existsSync(instrumentsDir)) {
+            this.instrumentImages = fs.readdirSync(instrumentsDir)
+                .filter(file => /\.(jpg|jpeg|png)$/i.test(file))
+                .map(file => path.join(instrumentsDir, file));
+        }
+    }
+
     /**
      * Generate an image with the given text and optional next line preview
      */
@@ -47,16 +61,23 @@ export class ImageGenerator {
             ctx.shadowOffsetY = 4;
         }
 
-        // Check if text contains transliteration (format: "Hindi | English")
-        const parts = text.split('|');
-        const hasTransliteration = parts.length === 2;
-
-        if (hasTransliteration) {
-            // Dual language mode
-            const hindiText = parts[0].trim();
-            const englishText = parts[1].trim();
-            this.drawDualLanguage(ctx, hindiText, englishText, style, nextLine);
+        // Check if this is an instrumental segment
+        const isInstrumental = /^[♪\s]+.*[♪\s]+$/.test(text.trim());
+        
+        if (isInstrumental && this.instrumentImages.length > 0) {
+            // Use cycling instrument images for instrumental segments
+            await this.drawInstrumentalImage(ctx, style);
         } else {
+            // Check if text contains transliteration (format: "Hindi | English")
+            const parts = text.split('|');
+            const hasTransliteration = parts.length === 2;
+
+            if (hasTransliteration) {
+                // Dual language mode
+                const hindiText = parts[0].trim();
+                const englishText = parts[1].trim();
+                this.drawDualLanguage(ctx, hindiText, englishText, style, nextLine);
+            } else {
             // Single language mode with optional next line preview
             // Set text style
             ctx.fillStyle = style.textColor;
@@ -119,11 +140,56 @@ export class ImageGenerator {
                     y += nextLineHeight;
                 }
             }
+            }
         }
 
         // Save to file
         const buffer = canvas.toBuffer('image/png');
         fs.writeFileSync(outputPath, buffer);
+    }
+
+    /**
+     * Draw instrumental image (cycling through available images)
+     */
+    private async drawInstrumentalImage(ctx: CanvasRenderingContext2D, style: ImageStyle): Promise<void> {
+        // Get current image and cycle to next
+        const imagePath = this.instrumentImages[this.instrumentImageIndex];
+        this.instrumentImageIndex = (this.instrumentImageIndex + 1) % this.instrumentImages.length;
+
+        try {
+            const image = await loadImage(imagePath);
+            
+            // Calculate dimensions to cover the canvas while maintaining aspect ratio
+            const canvasAspect = style.width / style.height;
+            const imageAspect = image.width / image.height;
+            
+            let drawWidth, drawHeight, offsetX, offsetY;
+            
+            if (imageAspect > canvasAspect) {
+                // Image is wider - fit to height
+                drawHeight = style.height;
+                drawWidth = drawHeight * imageAspect;
+                offsetX = (style.width - drawWidth) / 2;
+                offsetY = 0;
+            } else {
+                // Image is taller - fit to width
+                drawWidth = style.width;
+                drawHeight = drawWidth / imageAspect;
+                offsetX = 0;
+                offsetY = (style.height - drawHeight) / 2;
+            }
+            
+            // Draw image to cover canvas
+            ctx.drawImage(image, offsetX, offsetY, drawWidth, drawHeight);
+            
+            // Add a subtle overlay to darken the image slightly
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+            ctx.fillRect(0, 0, style.width, style.height);
+            
+        } catch (error) {
+            console.error(`Failed to load instrument image: ${imagePath}`, error);
+            // Fallback to gradient background if image fails to load
+        }
     }
 
     /**

@@ -6,7 +6,7 @@ projects/
 *.log
 .DS_Store
 
-# Media files
+# Media files (user data)
 *.mp3
 *.wav
 *.m4a
@@ -17,6 +17,11 @@ projects/
 *.mov
 *.mkv
 *.webm
+
+# Allow resource images
+!resources/**/*.jpg
+!resources/**/*.jpeg
+!resources/**/*.png
 
 # Data directories
 data/
