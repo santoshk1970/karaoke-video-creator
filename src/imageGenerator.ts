@@ -24,6 +24,7 @@ export interface ImageStyle {
 export class ImageGenerator {
     private instrumentImages: string[] = [];
     private instrumentImageIndex: number = 0;
+    private lastInstrumentalImagePath: string | null = null;
 
     constructor() {
         // Load instrument images from resources folder
@@ -76,7 +77,7 @@ export class ImageGenerator {
                 // Dual language mode
                 const hindiText = parts[0].trim();
                 const englishText = parts[1].trim();
-                this.drawDualLanguage(ctx, hindiText, englishText, style, nextLine);
+                await this.drawDualLanguage(ctx, hindiText, englishText, style, nextLine);
             } else {
             // Single language mode with optional next line preview
             // Set text style
@@ -155,6 +156,9 @@ export class ImageGenerator {
         // Get current image and cycle to next
         const imagePath = this.instrumentImages[this.instrumentImageIndex];
         this.instrumentImageIndex = (this.instrumentImageIndex + 1) % this.instrumentImages.length;
+        
+        // Store this as the last instrumental image for countdown backgrounds
+        this.lastInstrumentalImagePath = imagePath;
 
         try {
             const image = await loadImage(imagePath);
@@ -193,9 +197,48 @@ export class ImageGenerator {
     }
 
     /**
+     * Helper method to draw a background image
+     */
+    private async drawBackgroundImage(ctx: CanvasRenderingContext2D, imagePath: string, style: ImageStyle): Promise<void> {
+        try {
+            const image = await loadImage(imagePath);
+            
+            // Calculate dimensions to cover the canvas while maintaining aspect ratio
+            const canvasAspect = style.width / style.height;
+            const imageAspect = image.width / image.height;
+            
+            let drawWidth, drawHeight, offsetX, offsetY;
+            
+            if (imageAspect > canvasAspect) {
+                // Image is wider - fit to height
+                drawHeight = style.height;
+                drawWidth = drawHeight * imageAspect;
+                offsetX = (style.width - drawWidth) / 2;
+                offsetY = 0;
+            } else {
+                // Image is taller - fit to width
+                drawWidth = style.width;
+                drawHeight = drawWidth / imageAspect;
+                offsetX = 0;
+                offsetY = (style.height - drawHeight) / 2;
+            }
+            
+            // Draw image to cover canvas
+            ctx.drawImage(image, offsetX, offsetY, drawWidth, drawHeight);
+            
+            // Add a darker overlay for countdown to make text more visible
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+            ctx.fillRect(0, 0, style.width, style.height);
+            
+        } catch (error) {
+            console.error(`Failed to load background image: ${imagePath}`, error);
+        }
+    }
+
+    /**
      * Draw dual language text (Hindi top-left, English bottom-right) with optional next line
      */
-    private drawDualLanguage(ctx: CanvasRenderingContext2D, hindiText: string, englishText: string, style: ImageStyle, nextLine?: string): void {
+    private async drawDualLanguage(ctx: CanvasRenderingContext2D, hindiText: string, englishText: string, style: ImageStyle, nextLine?: string): Promise<void> {
         const padding = style.padding;
         // Horizontal offset to move text right (away from left edge)
         const xOffset = style.textShadow ? 500 : 0;
@@ -206,15 +249,26 @@ export class ImageGenerator {
         const isCountdown = /^[\[\]\d\s]+$/.test(hindiText.trim());
         
         if (isCountdown) {
-            // For countdown, draw centered without dual language
+            // For countdown, use last instrumental image as background if available
+            if (this.lastInstrumentalImagePath) {
+                await this.drawBackgroundImage(ctx, this.lastInstrumentalImagePath, style);
+            }
+            
+            // Draw countdown text centered
             ctx.fillStyle = style.textColor;
-            ctx.font = `${style.fontSize}px ${style.fontFamily}`;
+            ctx.font = `bold ${style.fontSize * 1.5}px ${style.fontFamily}`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             
+            // Add stronger shadow for countdown text
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+            ctx.shadowBlur = 20;
+            ctx.shadowOffsetX = 5;
+            ctx.shadowOffsetY = 5;
+            
             const x = style.width / 2;
             const y = style.height / 2;
-            this.drawLineWithBold(ctx, hindiText, x, y, {...style, textAlign: 'center'});
+            this.drawLineWithBold(ctx, hindiText, x, y, {...style, textAlign: 'center', fontSize: style.fontSize * 1.5});
             return;
         }
         
