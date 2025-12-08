@@ -5,12 +5,31 @@ output-vocals/
 projects/
 *.log
 .DS_Store
+
+# Media files
 *.mp3
 *.wav
 *.m4a
 *.flac
+*.aiff
 *.mp4
 *.avi
 *.mov
+*.mkv
+*.webm
+
+# Data directories
+data/
+demo-audio/
+demo-output/
+demo-temp/
+voice-samples/
+separated/
+demucs/
+demucs-output/
+
+# Backup files
 *.backup.json
+
+# Uploads
 web-ui/uploads/
