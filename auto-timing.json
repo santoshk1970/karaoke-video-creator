@@ -1,0 +1,242 @@
+{
+  "metadata": {
+    "audio": "vocals-only.mp3",
+    "lyrics": "projects/MyFirstSong/lyrics.txt",
+    "method": "meyda-energy-peaks",
+    "sampleRate": 22050,
+    "frameSize": 512,
+    "hopSize": 256
+  },
+  "timing": [
+    {
+      "line": 1,
+      "time": "27.400",
+      "text": "♪ Instrumental ♪ | ♪ Instrumental ♪",
+      "strength": "0.108",
+      "energy": "5.926"
+    },
+    {
+      "line": 2,
+      "time": "27.806",
+      "text": "मिल गई नज़रें, तो दिल भी | Mil gayi nazarein, to dil bhi",
+      "strength": "0.095",
+      "energy": "4.594"
+    },
+    {
+      "line": 3,
+      "time": "28.212",
+      "text": "एक दिन, मिल जाएंगे | Ek din, mil jayenge",
+      "strength": "0.081",
+      "energy": "3.332"
+    },
+    {
+      "line": 4,
+      "time": "28.723",
+      "text": "तू लहर है ,मैं लहर हूँ | Tu lahar hai, main lahar hoon",
+      "strength": "0.081",
+      "energy": "3.357"
+    },
+    {
+      "line": 5,
+      "time": "29.129",
+      "text": "मिल के साहिल पाएंगे | Mil ke sahil payenge",
+      "strength": "0.085",
+      "energy": "3.738"
+    },
+    {
+      "line": 6,
+      "time": "29.780",
+      "text": "मिल गई नज़रें, तो दिल भी | Mil gayi nazarein, to dil bhi",
+      "strength": "0.086",
+      "energy": "3.805"
+    },
+    {
+      "line": 7,
+      "time": "30.198",
+      "text": "एक दिन, मिल जाएंगे | Ek din, mil jayenge",
+      "strength": "0.100",
+      "energy": "5.135"
+    },
+    {
+      "line": 8,
+      "time": "30.685",
+      "text": "तू लहर है ,मैं लहर हूँ | Tu lahar hai, main lahar hoon",
+      "strength": "0.096",
+      "energy": "4.732"
+    },
+    {
+      "line": 9,
+      "time": "31.103",
+      "text": "मिल के साहिल पाएंगे | Mil ke sahil payenge",
+      "strength": "0.087",
+      "energy": "3.850"
+    },
+    {
+      "line": 10,
+      "time": "32.949",
+      "text": "♪ Instrumental ♪ | ♪ Instrumental ♪",
+      "strength": "0.083",
+      "energy": "3.562"
+    },
+    {
+      "line": 11,
+      "time": "33.495",
+      "text": "हमसफ़र हैं हमकदम हैं | Hamsafar hain hamkadam hain",
+      "strength": "0.083",
+      "energy": "3.528"
+    },
+    {
+      "line": 12,
+      "time": "34.087",
+      "text": "और सफ़र भी है नया | aur safar bhi hai naya",
+      "strength": "0.088",
+      "energy": "3.997"
+    },
+    {
+      "line": 13,
+      "time": "34.691",
+      "text": "इब्तिदा है प्यार की | Ibtida hai pyaar ki",
+      "strength": "0.083",
+      "energy": "3.532"
+    },
+    {
+      "line": 14,
+      "time": "35.248",
+      "text": "हमदम मेरे, हमनवाँ | hamdam mere, hamnawa",
+      "strength": "0.081",
+      "energy": "3.328"
+    },
+    {
+      "line": 15,
+      "time": "35.921",
+      "text": "ऐसी घड़ियाँ ऐसे पल छिन | Aisi ghadiyan aise pal chhin",
+      "strength": "0.080",
+      "energy": "3.293"
+    },
+    {
+      "line": 16,
+      "time": "38.696",
+      "text": "फिर कहाँ मिल पायेंगे | phir kahan mil payenge",
+      "strength": "0.091",
+      "energy": "4.221"
+    },
+    {
+      "line": 17,
+      "time": "40.786",
+      "text": "मिल गई नज़रें, तो दिल भी | Mil gayi nazarein, to dil bhi",
+      "strength": "0.086",
+      "energy": "3.751"
+    },
+    {
+      "line": 18,
+      "time": "41.204",
+      "text": "एक दिन, मिल जाएंगे | Ek din, mil jayenge",
+      "strength": "0.094",
+      "energy": "4.536"
+    },
+    {
+      "line": 19,
+      "time": "41.691",
+      "text": "तू लहर है ,मैं लहर हूँ | Tu lahar hai, main lahar hoon",
+      "strength": "0.087",
+      "energy": "3.873"
+    },
+    {
+      "line": 20,
+      "time": "42.272",
+      "text": "मिल के साहिल पायेंगे | Mil ke sahil payenge",
+      "strength": "0.082",
+      "energy": "3.416"
+    },
+    {
+      "line": 21,
+      "time": "43.770",
+      "text": "♪ Instrumental ♪ | ♪ Instrumental ♪",
+      "strength": "0.083",
+      "energy": "3.501"
+    },
+    {
+      "line": 22,
+      "time": "44.617",
+      "text": "महकी महकी चाँदनी है | Mahaki mahaki chandni hai",
+      "strength": "0.084",
+      "energy": "3.650"
+    },
+    {
+      "line": 23,
+      "time": "45.082",
+      "text": "बहका बहका है समां | Behka behka hai sama",
+      "strength": "0.083",
+      "energy": "3.490"
+    },
+    {
+      "line": 24,
+      "time": "45.534",
+      "text": "फूलों की बारात है और | Phoolon ki barat hai aur",
+      "strength": "0.081",
+      "energy": "3.341"
+    },
+    {
+      "line": 25,
+      "time": "46.045",
+      "text": "तारों का है कारवाँ  | Taron ka hai karwan",
+      "strength": "0.093",
+      "energy": "4.399"
+    },
+    {
+      "line": 26,
+      "time": "48.866",
+      "text": "गा रहा था ,एक दिल जो | Ga raha tha, ek dil jo",
+      "strength": "0.102",
+      "energy": "5.359"
+    },
+    {
+      "line": 27,
+      "time": "49.331",
+      "text": "गीत दो दिल ,गाएंगे | Geet do dil, gayenge",
+      "strength": "0.082",
+      "energy": "3.415"
+    },
+    {
+      "line": 28,
+      "time": "50.143",
+      "text": "मिल गई नज़रें, तो दिल भी | Mil gayi nazarein, to dil bhi",
+      "strength": "0.084",
+      "energy": "3.594"
+    },
+    {
+      "line": 29,
+      "time": "51.188",
+      "text": "एक दिन, मिल जाएंगे | Ek din, mil jayenge",
+      "strength": "0.084",
+      "energy": "3.635"
+    },
+    {
+      "line": 30,
+      "time": "51.618",
+      "text": "तू लहर है ,मैं लहर हूँ | Tu lahar hai, main lahar hoon",
+      "strength": "0.087",
+      "energy": "3.911"
+    },
+    {
+      "line": 31,
+      "time": "52.048",
+      "text": "मिल के साहिल पाएंगे | Mil ke sahil payenge",
+      "strength": "0.096",
+      "energy": "4.718"
+    },
+    {
+      "line": 32,
+      "time": "52.465",
+      "text": "Karaoke track by संतोष कुलकर्णी | Karaoke track by Santosh Kulkarni",
+      "strength": "0.086",
+      "energy": "3.758"
+    }
+  ],
+  "stats": {
+    "lyricsLines": 32,
+    "detectedOnsets": 186,
+    "matched": 32,
+    "unmatched": 0
+  }
+}

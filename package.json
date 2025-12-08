@@ -10,7 +10,13 @@
     "video": "ts-node src/createVideo.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["lyrics", "audio", "sync", "karaoke", "subtitles"],
+  "keywords": [
+    "lyrics",
+    "audio",
+    "sync",
+    "karaoke",
+    "subtitles"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {
@@ -19,6 +25,7 @@
     "@types/sharp": "^0.32.0",
     "canvas": "^3.2.0",
     "fluent-ffmpeg": "^2.1.3",
+    "meyda": "^5.6.3",
     "sharp": "^0.34.5",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"

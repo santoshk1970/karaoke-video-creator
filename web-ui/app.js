@@ -377,6 +377,9 @@ async function generateImages() {
         log('✓ All images generated successfully!', 'success');
         updateStatus(3, 'success');
         enableButton('btn-timing');
+        
+        // Check audio files to enable appropriate video buttons
+        checkAudioFilesStatus();
     } catch (error) {
         log(`Error: ${error.message}`, 'error');
         updateStatus(3, 'error');
@@ -410,7 +413,9 @@ async function applyTiming() {
             log('✓ Backup saved: timestamps.backup.json', 'info');
             
             updateStatus(4, 'success');
-            enableButton('btn-video');
+            
+            // Check audio files to enable appropriate video buttons
+            checkAudioFilesStatus();
         } else {
             throw new Error(result.error);
         }
@@ -537,18 +542,18 @@ async function checkAudioFilesStatus() {
                 novocalStatus.textContent = result.hasNoVocal ? '✅' : '⚪';
             }
             
-            // Check if timestamps exist to enable video buttons
-            const timestampsExist = document.getElementById('status-4').textContent === '✅';
+            // Check if images exist to enable video buttons (step 3)
+            const imagesExist = document.getElementById('status-3').textContent === '✅';
             
-            // Enable Sing-along video button if original audio exists and timestamps exist
-            if (result.hasOriginal && timestampsExist) {
+            // Enable Sing-along video button if original audio exists and images exist
+            if (result.hasOriginal && imagesExist) {
                 enableButton('btn-video-singalong');
             } else {
                 disableButton('btn-video-singalong');
             }
             
-            // Enable Karaoke video button if no-vocal audio exists and timestamps exist
-            if (result.hasNoVocal && timestampsExist) {
+            // Enable Karaoke video button if no-vocal audio exists and images exist
+            if (result.hasNoVocal && imagesExist) {
                 enableButton('btn-video-karaoke');
             } else {
                 disableButton('btn-video-karaoke');

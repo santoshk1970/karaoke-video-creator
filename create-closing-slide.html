@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Closing Slide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            width: 1920px;
+            height: 1080px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Arial', sans-serif;
+            color: white;
+        }
+        
+        .container {
+            text-align: center;
+            padding: 60px;
+            max-width: 1600px;
+        }
+        
+        .title {
+            font-size: 120px;
+            font-weight: bold;
+            margin-bottom: 40px;
+            text-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        
+        .subtitle {
+            font-size: 60px;
+            margin-bottom: 80px;
+            opacity: 0.95;
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 40px;
+            margin-bottom: 80px;
+        }
+        
+        .feature {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 40px;
+            border-radius: 20px;
+            font-size: 48px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .icon {
+            font-size: 72px;
+            margin-bottom: 20px;
+        }
+        
+        .cta {
+            font-size: 56px;
+            font-weight: bold;
+            margin-bottom: 30px;
+        }
+        
+        .link {
+            font-size: 44px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 30px 60px;
+            border-radius: 15px;
+            display: inline-block;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .divider {
+            width: 80%;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.3);
+            margin: 60px auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="title">🎵 Karaoke Video Creator</div>
+        
+        <div class="subtitle">✨ Create Amazing Videos in Minutes ✨</div>
+        
+        <div class="features">
+            <div class="feature">
+                <div class="icon">🎤</div>
+                <div>Karaoke Mode<br>(No Vocals)</div>
+            </div>
+            <div class="feature">
+                <div class="icon">🎵</div>
+                <div>Sing-along Mode<br>(With Vocals)</div>
+            </div>
+            <div class="feature">
+                <div class="icon">📝</div>
+                <div>Multi-line Lyrics<br>with Preview</div>
+            </div>
+            <div class="feature">
+                <div class="icon">⏱️</div>
+                <div>Perfect Timing<br>Tool</div>
+            </div>
+        </div>
+        
+        <div class="divider"></div>
+        
+        <div class="cta">🚀 Get Started Today!</div>
+        <div class="link">github.com/santoshk1970/karaoke-video-creator</div>
+    </div>
+</body>
+</html>
