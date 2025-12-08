@@ -38,31 +38,37 @@
                         <p class="text-sm text-gray-500 mt-1">Give your project a memorable name</p>
                     </div>
 
-                    <!-- Audio File (With Vocals) -->
+                    <!-- Audio File (With Vocals - Sing-along) -->
                     <div class="mb-6">
                         <label class="block text-gray-700 font-semibold mb-2">
-                            <i class="fas fa-music mr-2"></i>Audio File (With Vocals)
+                            <i class="fas fa-music mr-2"></i>Original Audio (With Vocals - for Sing-along)
                         </label>
+                        <div class="bg-green-50 border border-green-200 rounded-lg p-3 mb-3">
+                            <p class="text-sm text-green-800">
+                                <i class="fas fa-info-circle mr-2"></i>
+                                Upload the original song with vocals. Used to generate Sing-along video. <strong>At least one audio file is required.</strong>
+                            </p>
+                        </div>
                         <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-purple-500 transition">
-                            <input type="file" id="audioFile" accept=".mp3,.wav,.m4a" required
+                            <input type="file" id="audioFile" accept=".mp3,.wav,.m4a"
                                 class="hidden" onchange="updateFileName('audioFile', 'audioFileName')">
                             <button type="button" onclick="document.getElementById('audioFile').click()"
                                 class="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-6 rounded-lg transition">
-                                <i class="fas fa-upload mr-2"></i>Choose Audio File
+                                <i class="fas fa-upload mr-2"></i>Choose Original Audio
                             </button>
                             <p id="audioFileName" class="text-sm text-gray-500 mt-2">No file selected</p>
                         </div>
                     </div>
 
-                    <!-- Instrumental Audio (Optional) -->
+                    <!-- Instrumental Audio (No Vocals - Karaoke) -->
                     <div class="mb-6">
                         <label class="block text-gray-700 font-semibold mb-2">
-                            <i class="fas fa-guitar mr-2"></i>Instrumental Audio (Optional - No Vocals)
+                            <i class="fas fa-guitar mr-2"></i>Instrumental Audio (No Vocals - for Karaoke)
                         </label>
                         <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
                             <p class="text-sm text-blue-800">
                                 <i class="fas fa-info-circle mr-2"></i>
-                                If you already have a pre-separated instrumental track, upload it here. Otherwise, leave empty and we'll separate vocals for you.
+                                Upload instrumental/no-vocals version. Used to generate Karaoke video. <strong>At least one audio file is required.</strong>
                             </p>
                         </div>
                         <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 transition">
@@ -70,9 +76,9 @@
                                 class="hidden" onchange="updateFileName('instrumentalFile', 'instrumentalFileName')">
                             <button type="button" onclick="document.getElementById('instrumentalFile').click()"
                                 class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg transition">
-                                <i class="fas fa-upload mr-2"></i>Choose Instrumental File
+                                <i class="fas fa-upload mr-2"></i>Choose Instrumental Audio
                             </button>
-                            <p id="instrumentalFileName" class="text-sm text-gray-500 mt-2">No file selected (optional)</p>
+                            <p id="instrumentalFileName" class="text-sm text-gray-500 mt-2">No file selected</p>
                         </div>
                     </div>
 
@@ -151,8 +157,13 @@
             const lyricsFile = document.getElementById('lyricsFile').files[0];
             const instrumentalFile = document.getElementById('instrumentalFile').files[0];
 
-            if (!projectName || !audioFile || !lyricsFile) {
-                alert('Please fill in all required fields');
+            if (!projectName || !lyricsFile) {
+                alert('Please provide project name and lyrics file');
+                return;
+            }
+            
+            if (!audioFile && !instrumentalFile) {
+                alert('Please provide at least one audio file (Original or Instrumental)');
                 return;
             }
 

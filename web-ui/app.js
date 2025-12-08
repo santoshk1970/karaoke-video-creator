@@ -75,6 +75,9 @@ async function loadProject(name) {
                 enableButton('btn-play');
             }
             
+            // Check audio files status
+            checkAudioFilesStatus();
+            
             log(`✓ Project status loaded`, 'info');
         }
     } catch (error) {
@@ -419,26 +422,29 @@ async function applyTiming() {
 }
 
 // Step 5: Create Video
-async function createVideo() {
+async function createVideo(videoType) {
     if (!projectPath) {
         log('Please complete previous steps first', 'error');
         return;
     }
 
     const purgeMode = document.getElementById('purgeMode').checked;
+    const videoName = videoType === 'karaoke' ? 'Karaoke' : 'Sing-along';
+    const buttonId = `btn-video-${videoType}`;
+    const statusId = `status-${videoType}`;
     
-    updateStatus(5, 'running');
-    log('Creating video...', 'info');
+    document.getElementById(statusId).textContent = '🔵';
+    log(`Creating ${videoName} video...`, 'info');
     if (purgeMode) {
         log('🗑️ Purge mode: Will overwrite without backup', 'warning');
     }
-    disableButton('btn-video');
+    disableButton(buttonId);
 
     try {
         const response = await fetch('/api/create-video', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ projectPath, purge: purgeMode })
+            body: JSON.stringify({ projectPath, purge: purgeMode, videoType })
         });
 
         // Stream the output
@@ -469,48 +475,151 @@ async function createVideo() {
             });
         }
 
-        log('✓ Video created successfully!', 'success');
-        log('📹 Video saved to: output/output.mp4', 'success');
+        const videoFilename = videoType === 'karaoke' ? 'karaoke.mp4' : 'singalong.mp4';
+        log(`✓ ${videoName} video created successfully!`, 'success');
+        log(`📹 Video saved to: output/${videoFilename}`, 'success');
         
-        updateStatus(5, 'success');
-        enableButton('btn-play');
+        document.getElementById(statusId).textContent = '✅';
+        enableButton(`btn-play-${videoType}`);
     } catch (error) {
         log(`Error: ${error.message}`, 'error');
-        updateStatus(5, 'error');
-        enableButton('btn-video');
+        document.getElementById(statusId).textContent = '❌';
+        enableButton(buttonId);
     }
 }
 
 // Step 6: Play Video
-async function playVideo() {
+async function playVideo(videoType) {
     if (!projectPath) {
         log('Please complete previous steps first', 'error');
         return;
     }
 
-    updateStatus(6, 'running');
-    log('Opening video...', 'info');
+    const videoName = videoType === 'karaoke' ? 'Karaoke' : 'Sing-along';
+    log(`Opening ${videoName} video...`, 'info');
 
     try {
         const response = await fetch('/api/play-video', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ projectPath })
+            body: JSON.stringify({ projectPath, videoType })
         });
 
         const result = await response.json();
 
         if (result.success) {
-            log('✓ Video opened in default player', 'success');
-            log('🎵 Enjoy your karaoke video!', 'success');
-            updateStatus(6, 'success');
+            log(`✓ ${videoName} video opened in default player`, 'success');
+            log(`🎵 Enjoy your ${videoName.toLowerCase()} video!`, 'success');
         } else {
             throw new Error(result.error);
         }
     } catch (error) {
         log(`Error: ${error.message}`, 'error');
-        updateStatus(6, 'error');
     }
+}
+
+// Audio file management
+async function checkAudioFilesStatus() {
+    try {
+        const response = await fetch(`/api/check-audio-files?project=${encodeURIComponent(projectName)}`);
+        const result = await response.json();
+        
+        if (result.success) {
+            // Update original audio status
+            const originalStatus = document.getElementById('audio-original-status');
+            if (originalStatus) {
+                originalStatus.textContent = result.hasOriginal ? '✅' : '⚪';
+            }
+            
+            // Update no-vocal audio status
+            const novocalStatus = document.getElementById('audio-novocal-status');
+            if (novocalStatus) {
+                novocalStatus.textContent = result.hasNoVocal ? '✅' : '⚪';
+            }
+            
+            // Check if timestamps exist to enable video buttons
+            const timestampsExist = document.getElementById('status-4').textContent === '✅';
+            
+            // Enable Sing-along video button if original audio exists and timestamps exist
+            if (result.hasOriginal && timestampsExist) {
+                enableButton('btn-video-singalong');
+            } else {
+                disableButton('btn-video-singalong');
+            }
+            
+            // Enable Karaoke video button if no-vocal audio exists and timestamps exist
+            if (result.hasNoVocal && timestampsExist) {
+                enableButton('btn-video-karaoke');
+            } else {
+                disableButton('btn-video-karaoke');
+            }
+            
+            // Check video status
+            checkVideoStatus();
+        }
+    } catch (error) {
+        console.error('Error checking audio files:', error);
+    }
+}
+
+async function checkVideoStatus() {
+    try {
+        const response = await fetch(`/api/check-video-status?project=${encodeURIComponent(projectName)}`);
+        const result = await response.json();
+        
+        if (result.success) {
+            // Update Karaoke video status
+            if (result.hasKaraoke) {
+                document.getElementById('status-karaoke').textContent = '✅';
+                enableButton('btn-play-karaoke');
+            }
+            
+            // Update Sing-along video status
+            if (result.hasSingalong) {
+                document.getElementById('status-singalong').textContent = '✅';
+                enableButton('btn-play-singalong');
+            }
+        }
+    } catch (error) {
+        console.error('Error checking video status:', error);
+    }
+}
+
+function uploadNoVocalAudio() {
+    const fileInput = document.getElementById('novocalAudioFile');
+    fileInput.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        try {
+            log('📤 Uploading instrumental audio...', 'info');
+            
+            const formData = new FormData();
+            formData.append('projectName', projectName);
+            formData.append('audio', file);
+            
+            const response = await fetch('/api/upload-novocal-audio', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                log('✅ Instrumental audio uploaded successfully', 'success');
+                checkAudioFilesStatus();
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            log(`❌ Error uploading audio: ${error.message}`, 'error');
+        }
+        
+        // Reset file input
+        fileInput.value = '';
+    };
+    
+    fileInput.click();
 }
 
 // Initialization moved to DOMContentLoaded event

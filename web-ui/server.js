@@ -22,6 +22,67 @@ if (!fs.existsSync(PROJECTS_DIR)) {
     fs.mkdirSync(PROJECTS_DIR, { recursive: true });
 }
 
+// API: Check audio files
+app.get('/api/check-audio-files', async (req, res) => {
+    try {
+        const { project } = req.query;
+        const projectPath = path.join(PROJECTS_DIR, project);
+        
+        const hasOriginal = fs.existsSync(path.join(projectPath, 'audio.mp3'));
+        const hasNoVocal = fs.existsSync(path.join(projectPath, 'audio-novocal.mp3'));
+        
+        res.json({
+            success: true,
+            hasOriginal,
+            hasNoVocal
+        });
+    } catch (error) {
+        res.json({ success: false, error: error.message });
+    }
+});
+
+// API: Upload no-vocal audio
+app.post('/api/upload-novocal-audio', upload.single('audio'), async (req, res) => {
+    try {
+        const { projectName } = req.body;
+        const audioFile = req.file;
+        
+        if (!audioFile) {
+            return res.json({ success: false, error: 'No audio file provided' });
+        }
+        
+        const projectPath = path.join(PROJECTS_DIR, projectName);
+        const novocalPath = path.join(projectPath, 'audio-novocal.mp3');
+        
+        fs.copyFileSync(audioFile.path, novocalPath);
+        fs.unlinkSync(audioFile.path);
+        
+        res.json({ success: true });
+    } catch (error) {
+        res.json({ success: false, error: error.message });
+    }
+});
+
+// API: Check video status
+app.get('/api/check-video-status', async (req, res) => {
+    try {
+        const { project } = req.query;
+        const projectPath = path.join(PROJECTS_DIR, project);
+        const outputDir = path.join(projectPath, 'output');
+        
+        const hasKaraoke = fs.existsSync(path.join(outputDir, 'karaoke.mp4'));
+        const hasSingalong = fs.existsSync(path.join(outputDir, 'singalong.mp4'));
+        
+        res.json({
+            success: true,
+            hasKaraoke,
+            hasSingalong
+        });
+    } catch (error) {
+        res.json({ success: false, error: error.message });
+    }
+});
+
 // API: List projects
 app.get('/api/list-projects', async (req, res) => {
     try {
@@ -115,8 +176,14 @@ app.post('/api/setup', upload.fields([
 ]), async (req, res) => {
     try {
         const { projectName } = req.body;
-        const audioFile = req.files['audio'][0];
+        const audioFile = req.files['audio'] ? req.files['audio'][0] : null;
         const lyricsFile = req.files['lyrics'][0];
+        const instrumentalFile = req.files['instrumental'] ? req.files['instrumental'][0] : null;
+
+        // Validate at least one audio file
+        if (!audioFile && !instrumentalFile) {
+            return res.json({ success: false, error: 'At least one audio file is required' });
+        }
 
         // Create project directory
         const projectPath = path.join(PROJECTS_DIR, projectName);
@@ -124,24 +191,24 @@ app.post('/api/setup', upload.fields([
             fs.mkdirSync(projectPath, { recursive: true });
         }
 
-        // Copy files
-        const audioPath = path.join(projectPath, 'audio.mp3');
+        // Copy lyrics file
         const lyricsPath = path.join(projectPath, 'lyrics.txt');
-
-        fs.copyFileSync(audioFile.path, audioPath);
         fs.copyFileSync(lyricsFile.path, lyricsPath);
+        fs.unlinkSync(lyricsFile.path);
 
-        // Handle optional instrumental file
-        const instrumentalFile = req.files['instrumental'] ? req.files['instrumental'][0] : null;
+        // Copy original audio file (with vocals - for Sing-along)
+        if (audioFile) {
+            const audioPath = path.join(projectPath, 'audio.mp3');
+            fs.copyFileSync(audioFile.path, audioPath);
+            fs.unlinkSync(audioFile.path);
+        }
+
+        // Copy instrumental file (no vocals - for Karaoke)
         if (instrumentalFile) {
-            const instrumentalPath = path.join(projectPath, 'instrumental.mp3');
+            const instrumentalPath = path.join(projectPath, 'audio-novocal.mp3');
             fs.copyFileSync(instrumentalFile.path, instrumentalPath);
             fs.unlinkSync(instrumentalFile.path);
         }
-
-        // Clean up temp files
-        fs.unlinkSync(audioFile.path);
-        fs.unlinkSync(lyricsFile.path);
 
         // Count lines
         const lyricsContent = fs.readFileSync(lyricsPath, 'utf-8');
@@ -439,17 +506,31 @@ app.post('/api/apply-timing', async (req, res) => {
 // API: Create video
 app.post('/api/create-video', async (req, res) => {
     try {
-        const { projectPath: projectName, purge } = req.body;
+        const { projectPath: projectName, purge, videoType } = req.body;
         
         res.setHeader('Content-Type', 'text/plain');
         res.setHeader('Transfer-Encoding', 'chunked');
 
         // Construct absolute paths
         const projectPath = path.join(PROJECTS_DIR, projectName);
-        const audioPath = path.join(projectPath, 'audio.mp3');
+        
+        // Select audio file based on video type
+        const audioFilename = videoType === 'karaoke' ? 'audio-novocal.mp3' : 'audio.mp3';
+        const audioPath = path.join(projectPath, audioFilename);
+        
+        // Check if audio file exists
+        if (!fs.existsSync(audioPath)) {
+            res.write(`❌ Error: ${audioFilename} not found. Please upload the required audio file.\n`);
+            res.end();
+            return;
+        }
+        
         const outputPath = path.join(projectPath, 'output');
+        
+        // Output filename based on video type
+        const outputFilename = videoType === 'karaoke' ? 'karaoke.mp4' : 'singalong.mp4';
 
-        const args = ['run', 'video', '--', audioPath, outputPath];
+        const args = ['run', 'video', '--', audioPath, outputPath, '--output', outputFilename];
         if (purge) {
             args.push('--purge');
         }
@@ -483,12 +564,15 @@ app.post('/api/create-video', async (req, res) => {
 // API: Play video
 app.post('/api/play-video', async (req, res) => {
     try {
-        const { projectPath: projectName } = req.body;
+        const { projectPath: projectName, videoType } = req.body;
         const projectPath = path.join(PROJECTS_DIR, projectName);
-        const videoPath = path.join(projectPath, 'output', 'output.mp4');
+        
+        // Select video file based on type
+        const videoFilename = videoType === 'karaoke' ? 'karaoke.mp4' : 'singalong.mp4';
+        const videoPath = path.join(projectPath, 'output', videoFilename);
 
         if (!fs.existsSync(videoPath)) {
-            throw new Error('Video not found. Please create video first.');
+            throw new Error(`${videoFilename} not found. Please create the video first.`);
         }
 
         // Open video with default player
