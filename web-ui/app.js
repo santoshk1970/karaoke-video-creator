@@ -376,7 +376,10 @@ async function generateImages() {
 
         log('✓ All images generated successfully!', 'success');
         updateStatus(3, 'success');
-        enableButton('btn-timing');
+        
+        // Automatically apply timing after image generation
+        log('Applying timing to images...', 'info');
+        await applyTiming();
         
         // Check audio files to enable appropriate video buttons
         checkAudioFilesStatus();
@@ -387,16 +390,12 @@ async function generateImages() {
     }
 }
 
-// Step 4: Apply Timing
+// Apply Timing (now automatic after image generation)
 async function applyTiming() {
     if (!projectPath) {
         log('Please complete previous steps first', 'error');
         return;
     }
-
-    updateStatus(4, 'running');
-    log('Applying manual timing to images...', 'info');
-    disableButton('btn-timing');
 
     try {
         const response = await fetch('/api/apply-timing', {
@@ -410,9 +409,6 @@ async function applyTiming() {
         if (result.success) {
             log('✓ Timing applied successfully!', 'success');
             log(`✓ Processed ${result.segmentCount} segments`, 'success');
-            log('✓ Backup saved: timestamps.backup.json', 'info');
-            
-            updateStatus(4, 'success');
             
             // Check audio files to enable appropriate video buttons
             checkAudioFilesStatus();
@@ -420,9 +416,7 @@ async function applyTiming() {
             throw new Error(result.error);
         }
     } catch (error) {
-        log(`Error: ${error.message}`, 'error');
-        updateStatus(4, 'error');
-        enableButton('btn-timing');
+        log(`Error applying timing: ${error.message}`, 'error');
     }
 }
 
@@ -587,6 +581,79 @@ async function checkVideoStatus() {
         }
     } catch (error) {
         console.error('Error checking video status:', error);
+    }
+}
+
+async function separateVocals() {
+    try {
+        // Check if no-vocal file already exists
+        const checkResponse = await fetch(`/api/check-audio-files?project=${encodeURIComponent(projectName)}`);
+        const checkResult = await checkResponse.json();
+        
+        if (checkResult.success && checkResult.hasNoVocal) {
+            if (!confirm('Instrumental audio already exists. Do you want to regenerate it? This will overwrite the existing file.')) {
+                return;
+            }
+        }
+        
+        log('🎵 Starting vocal separation (this may take 1-2 minutes)...', 'info');
+        
+        // Show progress UI
+        const progressDiv = document.getElementById('separation-progress');
+        const progressBar = document.getElementById('separation-progress-bar');
+        const timeSpan = document.getElementById('separation-time');
+        progressDiv.classList.remove('hidden');
+        
+        // Disable button
+        const btn = document.getElementById('btn-separate-vocals');
+        btn.disabled = true;
+        btn.classList.add('opacity-50', 'cursor-not-allowed');
+        
+        // Start timer
+        let startTime = Date.now();
+        const timerInterval = setInterval(() => {
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            timeSpan.textContent = `${elapsed}s`;
+            // Fake progress (since we can't get real progress from Demucs)
+            const fakeProgress = Math.min(95, elapsed * 0.8);
+            progressBar.style.width = `${fakeProgress}%`;
+        }, 1000);
+        
+        // Call API
+        const response = await fetch('/api/separate-vocals', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ projectName })
+        });
+        
+        const result = await response.json();
+        
+        // Stop timer
+        clearInterval(timerInterval);
+        
+        if (result.success) {
+            progressBar.style.width = '100%';
+            log('✅ Vocal separation complete! Instrumental audio created.', 'success');
+            
+            setTimeout(() => {
+                progressDiv.classList.add('hidden');
+                progressBar.style.width = '0%';
+                btn.disabled = false;
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                checkAudioFilesStatus();
+            }, 1500);
+        } else {
+            throw new Error(result.error);
+        }
+    } catch (error) {
+        log(`❌ Error during vocal separation: ${error.message}`, 'error');
+        
+        // Reset UI
+        document.getElementById('separation-progress').classList.add('hidden');
+        document.getElementById('separation-progress-bar').style.width = '0%';
+        const btn = document.getElementById('btn-separate-vocals');
+        btn.disabled = false;
+        btn.classList.remove('opacity-50', 'cursor-not-allowed');
     }
 }
 

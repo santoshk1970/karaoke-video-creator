@@ -63,6 +63,46 @@ app.post('/api/upload-novocal-audio', upload.single('audio'), async (req, res) =
     }
 });
 
+// API: Separate vocals
+app.post('/api/separate-vocals', async (req, res) => {
+    try {
+        const { projectName } = req.body;
+        const projectPath = path.join(PROJECTS_DIR, projectName);
+        const audioPath = path.join(projectPath, 'audio.mp3');
+        
+        if (!fs.existsSync(audioPath)) {
+            return res.json({ success: false, error: 'Original audio file not found' });
+        }
+        
+        // Run the vocal separation script
+        const { execSync } = require('child_process');
+        const scriptPath = path.join(__dirname, '..', 'separate-vocals-mp3.js');
+        
+        console.log(`Running vocal separation for ${projectName}...`);
+        
+        try {
+            execSync(`node "${scriptPath}" "${audioPath}"`, {
+                stdio: 'inherit',
+                maxBuffer: 1024 * 1024 * 10
+            });
+            
+            // Check if output file was created
+            const novocalPath = path.join(projectPath, 'audio-novocal.mp3');
+            if (fs.existsSync(novocalPath)) {
+                console.log('Vocal separation completed successfully');
+                res.json({ success: true });
+            } else {
+                throw new Error('Separation completed but output file not found');
+            }
+        } catch (error) {
+            console.error('Vocal separation error:', error.message);
+            throw error;
+        }
+    } catch (error) {
+        res.json({ success: false, error: error.message });
+    }
+});
+
 // API: Check video status
 app.get('/api/check-video-status', async (req, res) => {
     try {
