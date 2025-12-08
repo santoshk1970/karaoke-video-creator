@@ -97,7 +97,7 @@ export class LyricSyncProcessor {
                 backgroundColor: '#000000',
                 padding: 80,
                 useGradient: true,
-                gradientColors: ['#1a1a3e', '#0f0f23'],
+                gradientColors: ['#8B4513', '#2C1810'], // Warm brown to dark brown gradient
                 textShadow: true,
                 transliterationFontSize: 56,
                 transliterationColor: '#AAAAAA',
