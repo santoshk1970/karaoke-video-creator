@@ -72,7 +72,12 @@ export class VideoGenerator {
         const concatLines: string[] = [];
 
         for (const lyric of timedLyrics) {
-            const imagePath = path.resolve(path.join(imagesDir, `lyric_${String(lyric.index).padStart(3, '0')}.png`));
+            // Handle split segments with segmentIndex
+            const lyricAny = lyric as any;
+            const filename = lyricAny.segmentIndex !== undefined
+                ? `lyric_${String(lyric.index).padStart(3, '0')}_seg${lyricAny.segmentIndex}.png`
+                : `lyric_${String(lyric.index).padStart(3, '0')}.png`;
+            const imagePath = path.resolve(path.join(imagesDir, filename));
             const duration = lyric.endTime - lyric.startTime;
             
             concatLines.push(`file '${imagePath}'`);
@@ -80,7 +85,11 @@ export class VideoGenerator {
         }
 
         // Add last image one more time (FFmpeg concat requirement)
-        const lastImage = path.resolve(path.join(imagesDir, `lyric_${String(timedLyrics.length - 1).padStart(3, '0')}.png`));
+        const lastLyric = timedLyrics[timedLyrics.length - 1] as any;
+        const lastFilename = lastLyric.segmentIndex !== undefined
+            ? `lyric_${String(lastLyric.index).padStart(3, '0')}_seg${lastLyric.segmentIndex}.png`
+            : `lyric_${String(lastLyric.index).padStart(3, '0')}.png`;
+        const lastImage = path.resolve(path.join(imagesDir, lastFilename));
         concatLines.push(`file '${lastImage}'`);
 
         fs.writeFileSync(concatFile, concatLines.join('\n'));

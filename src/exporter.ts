@@ -40,14 +40,21 @@ export class TimestampExporter {
                 totalLines: timedLyrics.length,
                 duration: timedLyrics[timedLyrics.length - 1]?.endTime || 0
             },
-            lyrics: timedLyrics.map(lyric => ({
-                index: lyric.index,
-                startTime: lyric.startTime,
-                endTime: lyric.endTime,
-                duration: lyric.endTime - lyric.startTime,
-                text: lyric.text,
-                imagePath: `images/lyric_${String(lyric.index).padStart(3, '0')}.png`
-            }))
+            lyrics: timedLyrics.map(lyric => {
+                const lyricAny = lyric as any;
+                const filename = lyricAny.segmentIndex !== undefined
+                    ? `lyric_${String(lyric.index).padStart(3, '0')}_seg${lyricAny.segmentIndex}.png`
+                    : `lyric_${String(lyric.index).padStart(3, '0')}.png`;
+                
+                return {
+                    index: lyric.index,
+                    startTime: lyric.startTime,
+                    endTime: lyric.endTime,
+                    duration: lyric.endTime - lyric.startTime,
+                    text: lyric.text,
+                    imagePath: `images/${filename}`
+                };
+            })
         };
 
         return JSON.stringify(data, null, 2);
