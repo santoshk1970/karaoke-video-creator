@@ -8,7 +8,11 @@
     "start": "ts-node src/index.ts",
     "dev": "ts-node src/index.ts",
     "video": "ts-node src/createVideo.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "timing": "ts-node src/timing-tool.ts",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage",
+    "test:watch": "vitest --watch"
   },
   "keywords": [
     "lyrics",
@@ -29,5 +33,10 @@
     "sharp": "^0.34.5",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^4.0.15",
+    "@vitest/ui": "^4.0.15",
+    "vitest": "^4.0.15"
   }
 }

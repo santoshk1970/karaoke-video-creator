@@ -121,7 +121,7 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
 fi
 
 # Run timing tool
-node timing-tool.js "$PROJECT_FOLDER"
+npx ts-node src/timing-tool.ts "$PROJECT_FOLDER"
 
 if [ $? -ne 0 ]; then
     print_error "Timing failed"

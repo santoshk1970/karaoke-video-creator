@@ -21,6 +21,7 @@ export interface TimedLyric {
     startTime: number;  // in seconds
     endTime: number;    // in seconds
     text: string;
+    imagePath?: string; // Optional: path to image file (for split segments)
 }
 
 export class LyricSyncProcessor {
@@ -31,11 +32,63 @@ export class LyricSyncProcessor {
     private videoGenerator: VideoGenerator;
 
     constructor(config: ProcessorConfig) {
+        this.validateConfig(config);
         this.config = config;
         this.alignmentEngine = new AlignmentEngine();
         this.imageGenerator = new ImageGenerator();
         this.exporter = new TimestampExporter();
         this.videoGenerator = new VideoGenerator();
+    }
+
+    /**
+     * Validate processor configuration
+     */
+    private validateConfig(config: ProcessorConfig): void {
+        // Validate audio file
+        if (!config.audioFile) {
+            throw new Error('Audio file path is required');
+        }
+        if (!fs.existsSync(config.audioFile)) {
+            throw new Error(`Audio file not found: ${config.audioFile}`);
+        }
+        const audioExt = path.extname(config.audioFile).toLowerCase();
+        const validAudioExts = ['.mp3', '.wav', '.m4a', '.flac', '.aac'];
+        if (!validAudioExts.includes(audioExt)) {
+            throw new Error(`Unsupported audio format: ${audioExt}. Supported: ${validAudioExts.join(', ')}`);
+        }
+
+        // Validate lyrics file
+        if (!config.lyricsFile) {
+            throw new Error('Lyrics file path is required');
+        }
+        if (!fs.existsSync(config.lyricsFile)) {
+            throw new Error(`Lyrics file not found: ${config.lyricsFile}`);
+        }
+        const lyricsExt = path.extname(config.lyricsFile).toLowerCase();
+        if (lyricsExt !== '.txt') {
+            throw new Error(`Lyrics file must be .txt format, got: ${lyricsExt}`);
+        }
+
+        // Validate optional vocal file
+        if (config.vocalFile && !fs.existsSync(config.vocalFile)) {
+            throw new Error(`Vocal file not found: ${config.vocalFile}`);
+        }
+
+        // Validate optional instrumental file
+        if (config.instrumentalFile && !fs.existsSync(config.instrumentalFile)) {
+            throw new Error(`Instrumental file not found: ${config.instrumentalFile}`);
+        }
+
+        // Validate output directory
+        if (!config.outputDir) {
+            throw new Error('Output directory is required');
+        }
+
+        // Validate format
+        const validFormats = ['json', 'lrc', 'srt'];
+        if (!validFormats.includes(config.format)) {
+            throw new Error(`Invalid format: ${config.format}. Supported: ${validFormats.join(', ')}`);
+        }
     }
 
     async process(): Promise<void> {
@@ -44,124 +97,102 @@ export class LyricSyncProcessor {
         console.log(`   Found ${lyrics.length} lines\n`);
 
         console.log('🔄 Step 2: Analyzing audio and aligning lyrics...');
-        const timedLyrics = await this.alignmentEngine.align(
-            this.config.audioFile,
-            lyrics,
-            this.config.vocalFile
-        );
-        console.log(`   Aligned ${timedLyrics.length} lyric segments\n`);
 
-        console.log('🔄 Step 3: Generating lyric images...');
-        await this.generateImages(timedLyrics);
-        console.log(`   Generated ${timedLyrics.length} images\n`);
+        // Check if timestamps.json already exists (from manual timing)
+        const timestampsPath = path.join(this.config.outputDir, 'timestamps.json');
+        let timedLyrics: TimedLyric[];
+
+        if (fs.existsSync(timestampsPath)) {
+            console.log('   Using existing timestamps from timestamps.json...');
+            const timestampsData = JSON.parse(fs.readFileSync(timestampsPath, 'utf-8'));
+            timedLyrics = timestampsData.lyrics.map((lyric: any) => ({
+                index: lyric.index,
+                startTime: lyric.startTime,
+                endTime: lyric.endTime,
+                text: lyric.text
+            }));
+            console.log(`   Loaded ${timedLyrics.length} pre-timed segments\n`);
+        } else {
+            timedLyrics = await this.alignmentEngine.align(
+                this.config.audioFile,
+                lyrics,
+                this.config.vocalFile
+            );
+            console.log(`   Aligned ${timedLyrics.length} lyric segments\n`);
+        }
+
+        // PASS 1: Virtual pass - calculate splits without generating anything
+        console.log('🔄 Step 3a: Planning image generation (analyzing splits)...');
+        const expandedLyrics = this.planImageGeneration(timedLyrics);
+        console.log(`   Planned ${expandedLyrics.length} images (${expandedLyrics.length - timedLyrics.length} splits)\n`);
+
+        // PASS 2: Execution pass - generate images based on plan
+        console.log('🔄 Step 3b: Generating lyric images...');
+        await this.generateImages(expandedLyrics);
+        console.log(`   Generated ${expandedLyrics.length} images\n`);
 
         console.log('🔄 Step 4: Exporting timestamp data...');
-        await this.exportTimestamps(timedLyrics);
+        await this.exportTimestamps(expandedLyrics);
         console.log('   Timestamp data exported');
+
+        // Auto-apply manual timing if set-manual-timing.js exists
+        const manualTimingScript = path.join(path.dirname(this.config.outputDir), 'set-manual-timing.js');
+        if (fs.existsSync(manualTimingScript)) {
+            console.log('\n🔄 Step 4b: Applying manual timing adjustments...');
+            try {
+                const { execSync } = require('child_process');
+                execSync(`node "${manualTimingScript}"`, {
+                    cwd: path.dirname(this.config.outputDir),
+                    stdio: 'inherit'
+                });
+                console.log('   Manual timing applied successfully');
+            } catch (error: any) {
+                console.error('   ⚠️  Failed to apply manual timing:', error.message);
+            }
+        }
 
         if (this.config.generateVideo) {
             console.log('\n🔄 Step 5: Generating video...');
-            await this.generateVideo(timedLyrics);
+            await this.generateVideo(expandedLyrics);
             console.log('   Video generated successfully!');
         }
     }
 
     private readLyrics(): string[] {
         const content = fs.readFileSync(this.config.lyricsFile, 'utf-8');
-        return content
+        const lyrics = content
             .split('\n')
             .map(line => line.trim())
             .filter(line => line.length > 0);
-    }
 
-    private async generateImages(timedLyrics: TimedLyric[]): Promise<void> {
-        const imagesDir = path.join(this.config.outputDir, 'images');
-        if (!fs.existsSync(imagesDir)) {
-            fs.mkdirSync(imagesDir, { recursive: true });
+        if (lyrics.length === 0) {
+            throw new Error(`Lyrics file is empty: ${this.config.lyricsFile}`);
         }
 
-        const INSTRUMENTAL_SPLIT_DURATION = 5; // Split instrumentals every 5 seconds
-        const MIN_SPLIT_DURATION = 7; // Only split if total duration is at least 7 seconds
-
-        for (let i = 0; i < timedLyrics.length; i++) {
-            const lyric = timedLyrics[i];
-            const duration = lyric.endTime - lyric.startTime;
-            const isInstrumental = /^[♪\s]+.*[♪\s]+$/.test(lyric.text.trim());
-            
-            // Get next line if available
-            const nextLine = i < timedLyrics.length - 1 ? timedLyrics[i + 1].text : undefined;
-            
-            // Check if we should split this instrumental segment
-            if (isInstrumental && duration >= MIN_SPLIT_DURATION) {
-                const numSegments = Math.ceil(duration / INSTRUMENTAL_SPLIT_DURATION);
-                
-                for (let seg = 0; seg < numSegments; seg++) {
-                    // Generate unique filename for each segment
-                    const segmentIndex = lyric.index + (seg / 100); // e.g., 5.00, 5.01, 5.02
-                    const filename = `lyric_${String(lyric.index).padStart(3, '0')}_seg${seg}.png`;
-                    const outputPath = path.join(imagesDir, filename);
-                    
-                    await this.imageGenerator.generate(lyric.text, outputPath, {
-                        width: 1920,
-                        height: 1080,
-                        fontSize: 80,
-                        fontFamily: 'Arial',
-                        textColor: '#FFFFFF',
-                        backgroundColor: '#000000',
-                        padding: 80,
-                        useGradient: true,
-                        gradientColors: ['#8B4513', '#2C1810'], // Warm brown to dark brown gradient
-                        textShadow: true,
-                        transliterationFontSize: 56,
-                        transliterationColor: '#AAAAAA',
-                        nextLineColor: '#888888',
-                        nextLineFontSize: 64
-                    }, nextLine);
-                }
-            } else {
-                // Normal single image generation
-                const filename = `lyric_${String(lyric.index).padStart(3, '0')}.png`;
-                const outputPath = path.join(imagesDir, filename);
-                
-                await this.imageGenerator.generate(lyric.text, outputPath, {
-                    width: 1920,
-                    height: 1080,
-                    fontSize: 80,
-                    fontFamily: 'Arial',
-                    textColor: '#FFFFFF',
-                    backgroundColor: '#000000',
-                    padding: 80,
-                    useGradient: true,
-                    gradientColors: ['#8B4513', '#2C1810'], // Warm brown to dark brown gradient
-                    textShadow: true,
-                    transliterationFontSize: 56,
-                    transliterationColor: '#AAAAAA',
-                    nextLineColor: '#888888',
-                    nextLineFontSize: 64
-                }, nextLine);
-            }
-
-            process.stdout.write(`\r   Progress: ${lyric.index + 1}/${timedLyrics.length}`);
-        }
-        console.log(); // New line after progress
+        return lyrics;
     }
 
     /**
-     * Split long instrumental segments into multiple shorter segments for image cycling
-     * Returns extended lyrics with segmentIndex for proper image path resolution
+     * PASS 1: Virtual/Planning Pass
+     * Analyze lyrics and determine which segments need splitting
+     * Returns expanded list with split segments included
      */
-    private splitLongInstrumentals(timedLyrics: TimedLyric[]): Array<TimedLyric & { segmentIndex?: number }> {
-        const INSTRUMENTAL_SPLIT_DURATION = 5;
-        const MIN_SPLIT_DURATION = 7;
+    private planImageGeneration(timedLyrics: TimedLyric[]): Array<TimedLyric & { segmentIndex?: number }> {
+        const INSTRUMENTAL_SPLIT_DURATION = 5; // Split every 5 seconds
+        const MIN_SPLIT_DURATION = 7; // Only split if >= 7 seconds
         const result: Array<TimedLyric & { segmentIndex?: number }> = [];
 
         for (const lyric of timedLyrics) {
             const duration = lyric.endTime - lyric.startTime;
-            const isInstrumental = /^[♪\s]+.*[♪\s]+$/.test(lyric.text.trim());
+            const textParts = lyric.text.split('|');
+            const isInstrumental = textParts.some(part => /^[♪\s]+.*[♪\s]+$/.test(part.trim()));
 
             if (isInstrumental && duration >= MIN_SPLIT_DURATION) {
+                // Split this segment
                 const numSegments = Math.ceil(duration / INSTRUMENTAL_SPLIT_DURATION);
                 const segmentDuration = duration / numSegments;
+
+                console.log(`   Instrumental #${lyric.index}: ${duration.toFixed(1)}s → ${numSegments} segments`);
 
                 for (let seg = 0; seg < numSegments; seg++) {
                     result.push({
@@ -173,6 +204,7 @@ export class LyricSyncProcessor {
                     });
                 }
             } else {
+                // Keep as-is
                 result.push(lyric);
             }
         }
@@ -180,25 +212,90 @@ export class LyricSyncProcessor {
         return result;
     }
 
-    private async exportTimestamps(timedLyrics: TimedLyric[]): Promise<void> {
+    /**
+     * PASS 2: Execution Pass
+     * Generate images based on the plan (no recalculation, just execute)
+     */
+    private async generateImages(expandedLyrics: Array<TimedLyric & { segmentIndex?: number }>): Promise<void> {
+        const imagesDir = path.join(this.config.outputDir, 'images');
+        if (!fs.existsSync(imagesDir)) {
+            fs.mkdirSync(imagesDir, { recursive: true });
+        }
+
+        for (let i = 0; i < expandedLyrics.length; i++) {
+            const lyric = expandedLyrics[i];
+
+            // Determine filename based on whether this is a split segment
+            const filename = lyric.segmentIndex !== undefined
+                ? `lyric_${String(lyric.index).padStart(3, '0')}_seg${lyric.segmentIndex}.png`
+                : `lyric_${String(lyric.index).padStart(3, '0')}.png`;
+            const outputPath = path.join(imagesDir, filename);
+
+            // Check if current lyric is a countdown
+            const isCountdown = /^\[?\d\]?\s*\d?\s*\d?\s*\d?\s*\|/.test(lyric.text);
+
+            // Get next line for preview
+            let nextLine: string | undefined;
+            if (i < expandedLyrics.length - 1) {
+                if (isCountdown) {
+                    // For countdown slides, find the next NON-countdown lyric
+                    for (let j = i + 1; j < expandedLyrics.length; j++) {
+                        const nextText = expandedLyrics[j].text;
+                        const isNextCountdown = /^\[?\d\]?\s*\d?\s*\d?\s*\d?\s*\|/.test(nextText);
+                        if (!isNextCountdown && !nextText.includes('♪ Instrumental ♪')) {
+                            nextLine = nextText;
+                            break;
+                        }
+                    }
+                } else {
+                    // For regular lyrics, show next line only if it's not a countdown
+                    const nextText = expandedLyrics[i + 1].text;
+                    const isNextCountdown = /^\[?\d\]?\s*\d?\s*\d?\s*\d?\s*\|/.test(nextText);
+                    if (!isNextCountdown) {
+                        nextLine = nextText;
+                    }
+                }
+            }
+
+            await this.imageGenerator.generate(lyric.text, outputPath, {
+                width: 1920,
+                height: 1080,
+                fontSize: 80,
+                fontFamily: 'Arial',
+                textColor: '#FFFFFF',
+                backgroundColor: '#000000',
+                padding: 80,
+                useGradient: true,
+                gradientColors: ['#8B4513', '#2C1810'], // Warm brown to dark brown gradient
+                textShadow: true,
+                transliterationFontSize: 56,
+                transliterationColor: '#AAAAAA',
+                nextLineColor: '#888888',
+                nextLineFontSize: 64
+            }, nextLine);
+
+            process.stdout.write(`\r   Progress: ${i + 1}/${expandedLyrics.length}`);
+        }
+        console.log(); // New line after progress
+    }
+
+    private async exportTimestamps(expandedLyrics: Array<TimedLyric & { segmentIndex?: number }>): Promise<void> {
         const outputPath = path.join(
             this.config.outputDir,
             `timestamps.${this.config.format}`
         );
 
-        // Split long instrumentals for export
-        const splitLyrics = this.splitLongInstrumentals(timedLyrics);
-        await this.exporter.export(splitLyrics, outputPath, this.config.format);
+        // Use expanded lyrics (already split from planning pass)
+        await this.exporter.export(expandedLyrics, outputPath, this.config.format);
     }
 
-    private async generateVideo(timedLyrics: TimedLyric[]): Promise<void> {
+    private async generateVideo(expandedLyrics: Array<TimedLyric & { segmentIndex?: number }>): Promise<void> {
         const imagesDir = path.join(this.config.outputDir, 'images');
         const videoPath = path.join(this.config.outputDir, 'output.mp4');
 
-        // Split long instrumentals for video generation
-        const splitLyrics = this.splitLongInstrumentals(timedLyrics);
+        // Use expanded lyrics (already split from planning pass)
         await this.videoGenerator.generateSimple(
-            splitLyrics,
+            expandedLyrics,
             imagesDir,
             this.config.audioFile,
             videoPath,

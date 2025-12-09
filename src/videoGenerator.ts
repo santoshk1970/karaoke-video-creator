@@ -1,10 +1,7 @@
-import { exec } from 'child_process';
-import { promisify } from 'util';
+import ffmpeg from 'fluent-ffmpeg';
 import * as fs from 'fs';
 import * as path from 'path';
 import { TimedLyric } from './processor';
-
-const execAsync = promisify(exec);
 
 export interface VideoOptions {
     width?: number;
@@ -14,6 +11,11 @@ export interface VideoOptions {
     backgroundColor?: string;
     format?: 'mp4' | 'webm' | 'mov';
     quality?: 'low' | 'medium' | 'high' | 'ultra';
+}
+
+interface QualitySettings {
+    preset: string;
+    crf: number;
 }
 
 export class VideoGenerator {
@@ -27,132 +29,12 @@ export class VideoGenerator {
         outputPath: string,
         options: VideoOptions = {}
     ): Promise<void> {
-        const {
-            width = 1920,
-            height = 1080,
-            fps = 30,
-            format = 'mp4',
-            quality = 'high'
-        } = options;
+        // Validate inputs
+        this.validateInputs(timedLyrics, imagesDir, audioFile);
+
+        const { quality = 'high' } = options;
 
         console.log('   Creating video with FFmpeg...');
-
-        // Strategy 1: Try concat demuxer (most efficient)
-        try {
-            await this.generateWithConcat(timedLyrics, imagesDir, audioFile, outputPath, options);
-            return;
-        } catch (error) {
-            console.log('   Concat method failed, trying filter_complex...');
-        }
-
-        // Strategy 2: Use filter_complex (more flexible)
-        await this.generateWithFilterComplex(timedLyrics, imagesDir, audioFile, outputPath, options);
-    }
-
-    /**
-     * Generate video using concat demuxer (faster)
-     */
-    private async generateWithConcat(
-        timedLyrics: TimedLyric[],
-        imagesDir: string,
-        audioFile: string,
-        outputPath: string,
-        options: VideoOptions
-    ): Promise<void> {
-        const { fps = 30 } = options;
-        const tempDir = path.join(path.dirname(outputPath), 'temp_video');
-        
-        // Create temp directory
-        if (!fs.existsSync(tempDir)) {
-            fs.mkdirSync(tempDir, { recursive: true });
-        }
-
-        // Create concat file
-        const concatFile = path.join(tempDir, 'concat.txt');
-        const concatLines: string[] = [];
-
-        for (const lyric of timedLyrics) {
-            // Handle split segments with segmentIndex
-            const lyricAny = lyric as any;
-            const filename = lyricAny.segmentIndex !== undefined
-                ? `lyric_${String(lyric.index).padStart(3, '0')}_seg${lyricAny.segmentIndex}.png`
-                : `lyric_${String(lyric.index).padStart(3, '0')}.png`;
-            const imagePath = path.resolve(path.join(imagesDir, filename));
-            const duration = lyric.endTime - lyric.startTime;
-            
-            concatLines.push(`file '${imagePath}'`);
-            concatLines.push(`duration ${duration.toFixed(3)}`);
-        }
-
-        // Add last image one more time (FFmpeg concat requirement)
-        const lastLyric = timedLyrics[timedLyrics.length - 1] as any;
-        const lastFilename = lastLyric.segmentIndex !== undefined
-            ? `lyric_${String(lastLyric.index).padStart(3, '0')}_seg${lastLyric.segmentIndex}.png`
-            : `lyric_${String(lastLyric.index).padStart(3, '0')}.png`;
-        const lastImage = path.resolve(path.join(imagesDir, lastFilename));
-        concatLines.push(`file '${lastImage}'`);
-
-        fs.writeFileSync(concatFile, concatLines.join('\n'));
-
-        // Generate video with concat
-        const qualitySettings = this.getQualitySettings(options.quality || 'high');
-        const command = `ffmpeg -f concat -safe 0 -i "${concatFile}" -i "${audioFile}" -c:v libx264 ${qualitySettings} -c:a aac -b:a 192k -pix_fmt yuv420p -shortest -y "${outputPath}"`;
-
-        console.log('   Running FFmpeg...');
-        await execAsync(command);
-
-        // Clean up
-        fs.unlinkSync(concatFile);
-        fs.rmdirSync(tempDir);
-    }
-
-    /**
-     * Generate video using filter_complex (more control)
-     */
-    private async generateWithFilterComplex(
-        timedLyrics: TimedLyric[],
-        imagesDir: string,
-        audioFile: string,
-        outputPath: string,
-        options: VideoOptions
-    ): Promise<void> {
-        const { fps = 30 } = options;
-        
-        // Build filter_complex for crossfading between images
-        let filterComplex = '';
-        let lastOutput = '[0:v]';
-
-        for (let i = 0; i < timedLyrics.length; i++) {
-            const lyric = timedLyrics[i];
-            const duration = lyric.endTime - lyric.startTime;
-            
-            if (i === 0) {
-                filterComplex += `[0:v]trim=duration=${duration},setpts=PTS-STARTPTS[v${i}];`;
-            } else {
-                const fadeStart = duration - 0.5; // 0.5 second crossfade
-                filterComplex += `[${i}:v]trim=duration=${duration},setpts=PTS-STARTPTS[v${i}];`;
-                filterComplex += `${lastOutput}[v${i}]xfade=transition=fade:duration=0.5:offset=${lyric.startTime - 0.5}[vout${i}];`;
-                lastOutput = `[vout${i}]`;
-            }
-        }
-
-        // This approach is complex - use the simpler concat method instead
-        throw new Error('Filter complex not implemented, using concat');
-    }
-
-    /**
-     * Generate video with simple image sequence (easiest method)
-     */
-    async generateSimple(
-        timedLyrics: TimedLyric[],
-        imagesDir: string,
-        audioFile: string,
-        outputPath: string,
-        options: VideoOptions = {}
-    ): Promise<void> {
-        const { fps = 30, quality = 'high' } = options;
-
-        console.log('   Using simple image sequence method...');
 
         // Create a temporary file list with durations
         const tempDir = path.join(path.dirname(outputPath), 'temp_video');
@@ -163,58 +45,47 @@ export class VideoGenerator {
         const concatFile = path.join(tempDir, 'images.txt');
         const lines: string[] = [];
 
+        // Build concat file
         for (const lyric of timedLyrics) {
-            const imagePath = path.join(imagesDir, `lyric_${String(lyric.index).padStart(3, '0')}.png`);
+            // Use imagePath from lyric object (handles split segments correctly)
+            const imagePath = lyric.imagePath
+                ? path.join(imagesDir, path.basename(lyric.imagePath))
+                : path.join(imagesDir, `lyric_${String(lyric.index).padStart(3, '0')}.png`);
+
+            // Validate image exists
+            if (!fs.existsSync(imagePath)) {
+                throw new Error(`Image not found: ${imagePath}`);
+            }
+
             const duration = lyric.endTime - lyric.startTime;
-            
+
+            if (duration <= 0) {
+                throw new Error(`Invalid duration for lyric ${lyric.index}: ${duration}s`);
+            }
+
             lines.push(`file '${path.resolve(imagePath)}'`);
             lines.push(`duration ${duration.toFixed(3)}`);
         }
 
         // Add last image again (required by concat demuxer)
-        const lastImage = path.join(imagesDir, `lyric_${String(timedLyrics.length - 1).padStart(3, '0')}.png`);
+        const lastLyric = timedLyrics[timedLyrics.length - 1];
+        const lastImage = lastLyric.imagePath
+            ? path.join(imagesDir, path.basename(lastLyric.imagePath))
+            : path.join(imagesDir, `lyric_${String(timedLyrics.length - 1).padStart(3, '0')}.png`);
         lines.push(`file '${path.resolve(lastImage)}'`);
 
         fs.writeFileSync(concatFile, lines.join('\n'));
 
-        // Debug: Show concat file contents
         console.log(`   Created concat file with ${timedLyrics.length} entries`);
-        console.log(`   Concat file saved at: ${concatFile}`);
-        
-        // Build FFmpeg command - use absolute path for audio too
+
+        // Build and execute FFmpeg command using fluent-ffmpeg
         const absoluteAudioPath = path.resolve(audioFile);
         const qualitySettings = this.getQualitySettings(quality);
-        const command = [
-            'ffmpeg',
-            '-f concat',
-            '-safe 0',
-            `-i "${concatFile}"`,
-            `-i "${absoluteAudioPath}"`,
-            '-vsync vfr', // Variable frame rate to respect duration directives
-            '-c:v libx264',
-            qualitySettings,
-            '-c:a aac',
-            '-b:a 192k',
-            '-pix_fmt yuv420p', // Compatibility
-            '-shortest', // Match audio length
-            '-y', // Overwrite
-            `"${outputPath}"`
-        ].join(' ');
 
         console.log('   Encoding video (this may take a while)...');
-        
+
         try {
-            const { stdout, stderr } = await execAsync(command, { maxBuffer: 10 * 1024 * 1024 });
-            
-            // Keep concat file for debugging
-            console.log(`   Concat file kept at: ${concatFile} (for debugging)`);
-            
-            // Clean up temp dir but keep concat file
-            // fs.unlinkSync(concatFile);
-            // if (fs.existsSync(tempDir) && fs.readdirSync(tempDir).length === 0) {
-            //     fs.rmdirSync(tempDir);
-            // }
-            
+            await this.runFFmpeg(concatFile, absoluteAudioPath, outputPath, qualitySettings);
             console.log('   ✓ Video created successfully!');
         } catch (error: any) {
             // Clean up on error
@@ -224,47 +95,126 @@ export class VideoGenerator {
     }
 
     /**
-     * Get quality settings for FFmpeg
+     * Alias for generate() to maintain backward compatibility
      */
-    private getQualitySettings(quality: string): string {
-        switch (quality) {
-            case 'low':
-                return '-preset ultrafast -crf 28';
-            case 'medium':
-                return '-preset medium -crf 23';
-            case 'high':
-                return '-preset slow -crf 20';
-            case 'ultra':
-                return '-preset veryslow -crf 18';
-            default:
-                return '-preset medium -crf 23';
+    async generateSimple(
+        timedLyrics: TimedLyric[],
+        imagesDir: string,
+        audioFile: string,
+        outputPath: string,
+        options: VideoOptions = {}
+    ): Promise<void> {
+        return this.generate(timedLyrics, imagesDir, audioFile, outputPath, options);
+    }
+
+    /**
+     * Validate inputs before processing
+     */
+    private validateInputs(timedLyrics: TimedLyric[], imagesDir: string, audioFile: string): void {
+        if (!timedLyrics || timedLyrics.length === 0) {
+            throw new Error('No timed lyrics provided');
+        }
+
+        if (!fs.existsSync(imagesDir)) {
+            throw new Error(`Images directory not found: ${imagesDir}`);
+        }
+
+        if (!fs.existsSync(audioFile)) {
+            throw new Error(`Audio file not found: ${audioFile}`);
+        }
+
+        // Validate audio file format
+        const validExtensions = ['.mp3', '.wav', '.m4a', '.flac', '.aac'];
+        const ext = path.extname(audioFile).toLowerCase();
+        if (!validExtensions.includes(ext)) {
+            throw new Error(`Unsupported audio format: ${ext}. Supported: ${validExtensions.join(', ')}`);
         }
     }
 
     /**
-     * Get audio duration
+     * Run FFmpeg using fluent-ffmpeg API (secure, no command injection)
      */
-    private async getAudioDuration(audioFile: string): Promise<number> {
-        const command = `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${audioFile}"`;
-        const { stdout } = await execAsync(command);
-        return parseFloat(stdout.trim());
+    private async runFFmpeg(
+        concatFile: string,
+        audioFile: string,
+        outputPath: string,
+        qualitySettings: QualitySettings
+    ): Promise<void> {
+        return new Promise((resolve, reject) => {
+            ffmpeg()
+                .input(concatFile)
+                .inputOptions(['-f concat', '-safe 0'])
+                .input(audioFile)
+                .videoCodec('libx264')
+                .outputOptions([
+                    `-preset ${qualitySettings.preset}`,
+                    `-crf ${qualitySettings.crf}`,
+                    '-vsync vfr', // Variable frame rate to respect duration directives
+                    '-pix_fmt yuv420p', // Compatibility
+                    '-shortest' // Match audio length
+                ])
+                .audioCodec('aac')
+                .audioBitrate('192k')
+                .on('start', (commandLine) => {
+                    console.log('   FFmpeg command:', commandLine);
+                })
+                .on('progress', (progress) => {
+                    if (progress.percent) {
+                        process.stdout.write(`\r   Progress: ${progress.percent.toFixed(1)}%`);
+                    }
+                })
+                .on('end', () => {
+                    process.stdout.write('\n');
+                    resolve();
+                })
+                .on('error', (err, stdout, stderr) => {
+                    reject(new Error(`FFmpeg failed: ${err.message}\n${stderr}`));
+                })
+                .save(outputPath);
+        });
     }
 
     /**
-     * Create a video with background audio and lyric overlays
+     * Get quality settings for FFmpeg
      */
-    async generateWithBackground(
-        timedLyrics: TimedLyric[],
-        imagesDir: string,
-        audioFile: string,
-        backgroundImage: string,
-        outputPath: string,
-        options: VideoOptions = {}
-    ): Promise<void> {
-        console.log('   Creating video with background image...');
-        
-        // This would overlay lyrics on a static background
-        // More complex - implement if needed
-        throw new Error('Background overlay not yet implemented');
+    private getQualitySettings(quality: string): QualitySettings {
+        switch (quality) {
+            case 'low':
+                return { preset: 'ultrafast', crf: 28 };
+            case 'medium':
+                return { preset: 'medium', crf: 23 };
+            case 'high':
+                return { preset: 'slow', crf: 20 };
+            case 'ultra':
+                return { preset: 'veryslow', crf: 18 };
+            default:
+                return { preset: 'medium', crf: 23 };
+        }
+    }
+
+    /**
+     * Get audio duration using fluent-ffmpeg
+     */
+    async getAudioDuration(audioFile: string): Promise<number> {
+        if (!fs.existsSync(audioFile)) {
+            throw new Error(`Audio file not found: ${audioFile}`);
+        }
+
+        return new Promise((resolve, reject) => {
+            ffmpeg.ffprobe(audioFile, (err, metadata) => {
+                if (err) {
+                    reject(new Error(`Failed to probe audio file: ${err.message}`));
+                    return;
+                }
+
+                const duration = metadata.format.duration;
+                if (duration === undefined) {
+                    reject(new Error('Could not determine audio duration'));
+                    return;
+                }
+
+                resolve(duration);
+            });
+        });
     }
 }

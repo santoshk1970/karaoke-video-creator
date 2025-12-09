@@ -1,9 +1,9 @@
-#!/usr/bin/env node
+#!/usr/bin/env ts-node
 
 /**
  * Interactive Timing Tool for Karaoke
  * 
- * Usage: node timing-tool.js <project-folder>
+ * Usage: ts-node src/timing-tool.ts <project-folder>
  * 
  * Features:
  * - Real-time audio playback
@@ -14,29 +14,38 @@
  * - Generates set-manual-timing.js
  */
 
-const fs = require('fs');
-const path = require('path');
-const { spawn } = require('child_process');
-const readline = require('readline');
+import * as fs from 'fs';
+import * as path from 'path';
+import { spawn, ChildProcess, execSync } from 'child_process';
+import * as readline from 'readline';
 
 // Configuration
 const COUNTDOWN_THRESHOLD = 10; // seconds
 const COUNTDOWN_DURATION = 4; // 4 seconds for "4 3 2 1" (1s per number)
 
-class TimingTool {
-    constructor(projectFolder) {
+interface Mark {
+    lineIndex: number;
+    time: number;
+    lyric: string;
+    isCountdown?: boolean;
+}
+
+export class TimingTool {
+    private projectFolder: string;
+    private audioFile: string = '';
+    private lyricsFile: string = '';
+    private lyrics: string[] = [];
+    private marks: Mark[] = [];
+    private currentLineIndex: number = 0;
+    private startTime: number | null = null;
+    private ffplayProcess: ChildProcess | null = null;
+    private displayInterval: NodeJS.Timeout | null = null;
+
+    constructor(projectFolder: string) {
         this.projectFolder = projectFolder;
-        this.audioFile = path.join(projectFolder, 'audio.mp3');
-        this.lyricsFile = path.join(projectFolder, 'lyrics.txt');
-        this.lyrics = [];
-        this.marks = [];
-        this.currentLineIndex = 0;
-        this.startTime = null;
-        this.ffplayProcess = null;
-        this.displayInterval = null;
     }
 
-    async init() {
+    async init(): Promise<void> {
         console.log('\n🎵 Karaoke Timing Tool\n' + '━'.repeat(50) + '\n');
 
         // Find audio and lyrics files
@@ -49,25 +58,25 @@ class TimingTool {
         console.log(`✅ Found: ${path.basename(this.lyricsFile)} (${this.lyrics.length} lines)\n`);
     }
 
-    async findFiles() {
+    private async findFiles(): Promise<void> {
         const files = fs.readdirSync(this.projectFolder);
 
         // Find audio file
-        this.audioFile = files.find(f => f.match(/\.(mp3|wav|m4a|flac)$/i));
-        if (!this.audioFile) {
+        const audioFile = files.find(f => f.match(/\.(mp3|wav|m4a|flac)$/i));
+        if (!audioFile) {
             throw new Error('No audio file found in project folder');
         }
-        this.audioFile = path.join(this.projectFolder, this.audioFile);
+        this.audioFile = path.join(this.projectFolder, audioFile);
 
         // Find lyrics file
-        this.lyricsFile = files.find(f => f.match(/lyrics.*\.txt$/i) || f === 'lyrics.txt');
-        if (!this.lyricsFile) {
+        const lyricsFile = files.find(f => f.match(/lyrics.*\.txt$/i) || f === 'lyrics.txt');
+        if (!lyricsFile) {
             throw new Error('No lyrics file found in project folder');
         }
-        this.lyricsFile = path.join(this.projectFolder, this.lyricsFile);
+        this.lyricsFile = path.join(this.projectFolder, lyricsFile);
     }
 
-    async loadLyrics() {
+    private async loadLyrics(): Promise<void> {
         const content = fs.readFileSync(this.lyricsFile, 'utf-8');
         const allLyrics = content.split('\n').filter(line => line.trim());
 
@@ -82,18 +91,18 @@ class TimingTool {
         console.log(`✅ Found: ${path.basename(this.lyricsFile)} (${this.lyrics.length} lines)\n`);
     }
 
-    getCurrentTime() {
+    private getCurrentTime(): number {
         if (!this.startTime) return 0;
         return (Date.now() - this.startTime) / 1000;
     }
 
-    formatTime(seconds) {
+    private formatTime(seconds: number): string {
         const mins = Math.floor(seconds / 60);
         const secs = (seconds % 60).toFixed(1);
         return `${mins}:${secs.padStart(4, '0')}`;
     }
 
-    markTime() {
+    private markTime(): void {
         const rawTime = this.getCurrentTime();
         // Apply -2 second adjustment (reaction time + display earlier)
         const adjustedTime = Math.max(0, rawTime - 2.0);
@@ -110,19 +119,19 @@ class TimingTool {
         this.showNextLine();
     }
 
-    undoLastMark() {
+    private undoLastMark(): void {
         if (this.marks.length === 0) {
             console.log('\n⚠️  No marks to undo');
             return;
         }
 
-        const removed = this.marks.pop();
+        const removed = this.marks.pop()!;
         this.currentLineIndex--;
         console.log(`\n↩️  Undone: [${this.formatTime(removed.time)}] "${removed.lyric.substring(0, 40)}..."`);
         this.showNextLine();
     }
 
-    showNextLine() {
+    private showNextLine(): void {
         // Clear any existing display interval
         if (this.displayInterval) {
             clearInterval(this.displayInterval);
@@ -142,7 +151,7 @@ class TimingTool {
         }, 1000);
     }
 
-    displayCurrentLine() {
+    private displayCurrentLine(): void {
         if (this.currentLineIndex >= this.lyrics.length) {
             return;
         }
@@ -174,12 +183,12 @@ class TimingTool {
         console.log('');
     }
 
-    async startPlayback() {
+    private async startPlayback(): Promise<void> {
         console.log('\n🎵 Starting playback in 3 seconds...\n');
 
         // Kill any existing ffplay processes first
         try {
-            require('child_process').execSync('killall ffplay 2>/dev/null', { stdio: 'ignore' });
+            execSync('killall ffplay 2>/dev/null', { stdio: 'ignore' });
         } catch (e) {
             // Ignore if no processes to kill
         }
@@ -208,7 +217,7 @@ class TimingTool {
         });
     }
 
-    setupKeyboardInput() {
+    private setupKeyboardInput(): void {
         readline.emitKeypressEvents(process.stdin);
         if (process.stdin.isTTY) {
             process.stdin.setRawMode(true);
@@ -232,9 +241,9 @@ class TimingTool {
         });
     }
 
-    insertCountdowns() {
+    private insertCountdowns(): Mark[] {
         // Find gaps > COUNTDOWN_THRESHOLD and insert countdown slides
-        const marksWithCountdowns = [];
+        const marksWithCountdowns: Mark[] = [];
 
         for (let i = 0; i < this.marks.length; i++) {
             const currentMark = this.marks[i];
@@ -275,14 +284,14 @@ class TimingTool {
         return marksWithCountdowns;
     }
 
-    generateTimingFile() {
+    private generateTimingFile(): void {
         console.log('\n🔄 Processing marks...');
 
         // Insert countdowns for long instrumentals
         const allMarks = this.insertCountdowns();
 
         // Update lyrics array to include countdown slides
-        const updatedLyrics = [];
+        const updatedLyrics: string[] = [];
         let lyricIndex = 0;
 
         for (const mark of allMarks) {
@@ -349,7 +358,7 @@ console.log('✅ Manual timing applied to', data.lyrics.length, 'lyrics');
         console.log(`   Total marks: ${allMarks.length}`);
     }
 
-    finish() {
+    private finish(): void {
         console.log('\n\n🎬 Finishing up...\n');
 
         if (this.marks.length === 0) {
@@ -369,7 +378,7 @@ console.log('✅ Manual timing applied to', data.lyrics.length, 'lyrics');
         process.exit(0);
     }
 
-    cleanup() {
+    private cleanup(): void {
         // Clear display interval
         if (this.displayInterval) {
             clearInterval(this.displayInterval);
@@ -382,7 +391,7 @@ console.log('✅ Manual timing applied to', data.lyrics.length, 'lyrics');
 
         // Also kill any lingering ffplay processes
         try {
-            require('child_process').execSync('killall ffplay 2>/dev/null', { stdio: 'ignore' });
+            execSync('killall ffplay 2>/dev/null', { stdio: 'ignore' });
         } catch (e) {
             // Ignore if no processes to kill
         }
@@ -392,12 +401,12 @@ console.log('✅ Manual timing applied to', data.lyrics.length, 'lyrics');
         }
     }
 
-    async run() {
+    async run(): Promise<void> {
         try {
             await this.init();
             this.setupKeyboardInput();
             await this.startPlayback();
-        } catch (error) {
+        } catch (error: any) {
             console.error('\n❌ Error:', error.message);
             this.cleanup();
             process.exit(1);
@@ -410,8 +419,8 @@ if (require.main === module) {
     const projectFolder = process.argv[2];
 
     if (!projectFolder) {
-        console.log('Usage: node timing-tool.js <project-folder>');
-        console.log('Example: node timing-tool.js ./my-song');
+        console.log('Usage: ts-node src/timing-tool.ts <project-folder>');
+        console.log('Example: ts-node src/timing-tool.ts ./my-song');
         process.exit(1);
     }
 
@@ -423,5 +432,3 @@ if (require.main === module) {
     const tool = new TimingTool(projectFolder);
     tool.run();
 }
-
-module.exports = TimingTool;

@@ -1,161 +1,86 @@
 # Quick Start Guide
 
-## 1. Install Dependencies
+## 🚀 Start Web UI
 
 ```bash
-cd lyric-sync
-npm install
+# Kill any existing server on port 8080 and start fresh
+lsof -ti:8080 | xargs kill -9 2>/dev/null; cd web-ui && node server.js
 ```
 
-## 2. Install FFmpeg (Required)
+**Access at**: http://localhost:8080
+
+---
+
+## 🎵 Command Line Usage
+
+### Full Karaoke Wizard (Recommended)
 
 ```bash
-# macOS
-brew install ffmpeg
-
-# Check installation
-ffmpeg -version
+./karaoke-wizard.sh ./my-song
 ```
 
-## 3. (Optional) Install Python Aeneas for Best Accuracy
-
-**Note**: Aeneas installation is complex and requires additional dependencies (espeak, numpy, etc.). 
-**The tool works great without it** using FFmpeg-based alignment!
-
-If you still want to try installing aeneas:
-```bash
-# Install dependencies
-brew install espeak
-pip3 install numpy
-pip3 install aeneas
-```
-
-**Skip this step if you encounter errors** - the tool will automatically fall back to FFmpeg alignment.
-
-## 4. Prepare Your Files
-
-You need:
-- **Audio file** (MP3, WAV, etc.) - the full song
-- **Lyrics file** (TXT) - one line per lyric line
-
-Optional:
-- **Vocal-only track** - improves accuracy
-- **Instrumental track** - for reference
-
-## 5. Run the Tool
-
-### Simple Example
+### Individual Steps
 
 ```bash
-# Using the example file
-npm start example-audio.mp3 example-lyrics.txt
+# 1. Interactive timing
+npm run timing ./my-song
+
+# 2. Vocal separation
+./separate-and-convert.sh ./my-song/audio.mp3 ./my-song/output
+
+# 3. Generate images and timestamps
+npm start -- ./my-song/audio.mp3 ./my-song/lyrics.txt --output ./my-song/output
+
+# 4. Create video
+npm run video ./my-song/audio.mp3 ./my-song/output
 ```
 
-### With Your Own Files
+---
+
+## 📁 Project Structure
+
+```
+my-song/
+├── audio.mp3           # Your audio file
+├── lyrics.txt          # Your lyrics (one line per lyric)
+└── output/             # Generated files
+    ├── images/         # Lyric images
+    ├── timestamps.json # Timing data
+    ├── Original-*.mp4  # Video with vocals
+    └── Karaoke-*.mp4   # Video without vocals
+```
+
+---
+
+## 🔧 Common Commands
 
 ```bash
-npm start /path/to/your/song.mp3 /path/to/your/lyrics.txt
+# Build TypeScript
+npm run build
+
+# Restart web UI
+lsof -ti:8080 | xargs kill -9 2>/dev/null; cd web-ui && node server.js
+
+# Test with sample project
+./karaoke-wizard.sh ./test-song
 ```
 
-### With All Options
+---
+
+## 🏷️ Git Tags
 
 ```bash
-npm start song.mp3 lyrics.txt \
-  --vocal vocals.mp3 \
-  --output ./my-karaoke \
-  --format lrc
+# View all tags
+git tag -l
+
+# Rollback to pre-refactoring state
+git reset --hard pre_refactoring
 ```
 
-## 6. Check the Output
+---
 
-```bash
-ls output/
-# You should see:
-# - images/ folder with PNG files
-# - timestamps.json (or .lrc or .srt depending on format)
-```
+## 📝 Supported Formats
 
-## Example Workflow
-
-### Step 1: Create lyrics file
-
-```bash
-cat > my-lyrics.txt << 'EOF'
-This is the first line
-This is the second line
-And here's the third
-EOF
-```
-
-### Step 2: Run the tool
-
-```bash
-npm start my-song.mp3 my-lyrics.txt --output ./results
-```
-
-### Step 3: View results
-
-```bash
-# View the JSON output
-cat results/timestamps.json
-
-# View the images
-open results/images/
-```
-
-## What You Get
-
-### 1. Timed Lyrics (JSON)
-
-```json
-{
-  "lyrics": [
-    {
-      "index": 0,
-      "startTime": 0.0,
-      "endTime": 3.5,
-      "text": "This is the first line",
-      "imagePath": "images/lyric_000.png"
-    }
-  ]
-}
-```
-
-### 2. Lyric Images
-
-- High-quality PNG images (1920x1080)
-- One image per lyric line
-- Centered white text on black background
-- Customizable styling
-
-### 3. Multiple Export Formats
-
-**JSON**: Full metadata with timestamps and image paths
-**LRC**: Standard karaoke format
-**SRT**: Subtitle format for video players
-
-## Troubleshooting
-
-### Error: "Audio file not found"
-Make sure the path to your audio file is correct.
-
-### Error: "FFmpeg not found"
-Install FFmpeg: `brew install ffmpeg`
-
-### Timing is off
-- Try using a vocal-only track: `--vocal vocals.mp3`
-- Install aeneas for better accuracy: `pip3 install aeneas`
-
-### Images are blank
-Check that the canvas library installed correctly: `npm install canvas`
-
-## Next Steps
-
-- Customize image styling in `src/imageGenerator.ts`
-- Use the JSON output to create a karaoke video
-- Import LRC files into karaoke players
-- Use SRT files as video subtitles
-
-## Need Help?
-
-Check the full README.md for detailed documentation.
+**Audio**: `.mp3`, `.wav`, `.m4a`, `.flac`, `.aac`  
+**Lyrics**: `.txt` (one line per lyric)  
+**Output**: `.mp4`, `.json`, `.lrc`, `.srt`

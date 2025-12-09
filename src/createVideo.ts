@@ -14,6 +14,7 @@ interface TimedLyric {
     startTime: number;
     endTime: number;
     text: string;
+    imagePath?: string;
 }
 
 async function main() {
@@ -83,7 +84,7 @@ async function main() {
     }
 
     const outputPath = path.join(outputDir, outputFilename);
-    
+
     // Backup existing video if it exists and purge is not set
     if (fs.existsSync(outputPath) && !purge) {
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
@@ -94,7 +95,7 @@ async function main() {
     } else if (fs.existsSync(outputPath) && purge) {
         console.log(`🗑️  Purge mode: Overwriting existing video without backup\n`);
     }
-    
+
     console.log('📁 Input files:');
     console.log(`   Audio: ${audioFile}`);
     console.log(`   Timestamps: ${timestampsFile}`);
@@ -109,28 +110,31 @@ async function main() {
         index: lyric.index,
         startTime: lyric.startTime,
         endTime: lyric.endTime,
-        text: lyric.text
+        text: lyric.text,
+        imagePath: lyric.imagePath
     }));
 
     console.log(`   Found ${timedLyrics.length} lyric segments\n`);
 
-    // Verify images exist
-    console.log('🔄 Verifying images...');
-    let missingImages = 0;
-    for (const lyric of timedLyrics) {
-        const imagePath = path.join(imagesDir, `lyric_${String(lyric.index).padStart(3, '0')}.png`);
+    // Verify all images exist
+    console.log('\n🔄 Verifying all images...');
+    const missingImages: string[] = [];
+    for (const lyric of data.lyrics) {
+        const imagePath = lyric.imagePath
+            ? path.join(imagesDir, path.basename(lyric.imagePath))
+            : path.join(imagesDir, `lyric_${String(lyric.index).padStart(3, '0')}.png`);
+
         if (!fs.existsSync(imagePath)) {
-            console.error(`   ⚠️  Missing: ${imagePath}`);
-            missingImages++;
+            missingImages.push(imagePath);
+            console.log(`   ⚠️  Missing: ${imagePath}`);
         }
     }
 
-    if (missingImages > 0) {
-        console.error(`\n❌ ${missingImages} image(s) missing. Cannot create video.`);
+    if (missingImages.length > 0) {
+        console.log(`\n❌ ${missingImages.length} image(s) missing. Cannot create video.\n`);
         process.exit(1);
     }
-
-    console.log(`   All ${timedLyrics.length} images found ✓\n`);
+    console.log('   All ' + data.lyrics.length + ' images found ✓\n');
 
     // Generate video
     console.log('🎬 Generating video...');

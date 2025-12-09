@@ -3,6 +3,49 @@ let audioFileName = '';
 let lyricsFileName = '';
 let projectName = '';
 
+// Reload Lyrics File
+async function reloadLyrics() {
+    const fileInput = document.getElementById('lyricsFile');
+    fileInput.click();
+    
+    fileInput.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        log(`Uploading new lyrics file: ${file.name}...`, 'info');
+        
+        const formData = new FormData();
+        formData.append('lyrics', file);
+        formData.append('projectPath', projectPath);
+        
+        try {
+            const response = await fetch('/api/reload-lyrics', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                log(`✓ Lyrics file reloaded successfully!`, 'success');
+                log(`  Found ${result.lineCount} lines`, 'info');
+                // Reset timing status since lyrics changed
+                updateStatus(1, 'pending');
+                updateStatus(3, 'pending');
+                updateStatus(4, 'pending');
+                updateStatus(5, 'pending');
+            } else {
+                log(`Error: ${result.error}`, 'error');
+            }
+        } catch (error) {
+            log(`Error uploading lyrics: ${error.message}`, 'error');
+        }
+        
+        // Reset file input
+        fileInput.value = '';
+    };
+}
+
 // Check if project is specified in URL
 window.addEventListener('DOMContentLoaded', () => {
     // Initialize
@@ -340,6 +383,29 @@ async function generateImages() {
     }
 
     updateStatus(3, 'running');
+    
+    // Apply manual timing FIRST if it exists
+    const timingScriptPath = `${projectPath}/set-manual-timing.js`;
+    try {
+        const fs = require('fs');
+        if (require('fs').existsSync) {
+            // We're in Node, but this is browser code - use fetch instead
+        }
+    } catch (e) {}
+    
+    // Check if timing script exists and apply it first
+    log('Checking for manual timing...', 'info');
+    const timingExists = await fetch('/api/file-exists', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filePath: timingScriptPath })
+    }).then(r => r.json()).then(data => data.exists).catch(() => false);
+    
+    if (timingExists) {
+        log('Applying manual timing before image generation...', 'info');
+        await applyTiming();
+    }
+    
     log('Generating lyric images...', 'info');
     disableButton('btn-images');
 
@@ -376,10 +442,6 @@ async function generateImages() {
 
         log('✓ All images generated successfully!', 'success');
         updateStatus(3, 'success');
-        
-        // Automatically apply timing after image generation
-        log('Applying timing to images...', 'info');
-        await applyTiming();
         
         // Check audio files to enable appropriate video buttons
         checkAudioFilesStatus();

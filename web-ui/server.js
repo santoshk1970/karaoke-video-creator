@@ -22,15 +22,60 @@ if (!fs.existsSync(PROJECTS_DIR)) {
     fs.mkdirSync(PROJECTS_DIR, { recursive: true });
 }
 
+// API: Reload lyrics file
+app.post('/api/reload-lyrics', upload.single('lyrics'), (req, res) => {
+    try {
+        const { projectPath } = req.body;
+        const projectDir = path.join(PROJECTS_DIR, projectPath);
+
+        if (!fs.existsSync(projectDir)) {
+            return res.json({ success: false, error: 'Project not found' });
+        }
+
+        // Read uploaded file
+        const uploadedFile = req.file;
+        const lyricsContent = fs.readFileSync(uploadedFile.path, 'utf-8');
+
+        // Write to lyrics-with-timing.txt
+        const lyricsPath = path.join(projectDir, 'lyrics-with-timing.txt');
+        fs.writeFileSync(lyricsPath, lyricsContent);
+
+        // Count lines
+        const lineCount = lyricsContent.split('\n').filter(line => line.trim()).length;
+
+        // Clean up uploaded file
+        fs.unlinkSync(uploadedFile.path);
+
+        // Delete old timing data and images since lyrics changed
+        const outputDir = path.join(projectDir, 'output');
+        if (fs.existsSync(outputDir)) {
+            const timestampsPath = path.join(outputDir, 'timestamps.json');
+            const imagesDir = path.join(outputDir, 'images');
+
+            if (fs.existsSync(timestampsPath)) {
+                fs.unlinkSync(timestampsPath);
+            }
+            if (fs.existsSync(imagesDir)) {
+                fs.rmSync(imagesDir, { recursive: true, force: true });
+            }
+        }
+
+        res.json({ success: true, lineCount });
+    } catch (error) {
+        console.error('Reload lyrics error:', error);
+        res.json({ success: false, error: error.message });
+    }
+});
+
 // API: Check audio files
 app.get('/api/check-audio-files', async (req, res) => {
     try {
         const { project } = req.query;
         const projectPath = path.join(PROJECTS_DIR, project);
-        
+
         const hasOriginal = fs.existsSync(path.join(projectPath, 'audio.mp3'));
         const hasNoVocal = fs.existsSync(path.join(projectPath, 'audio-novocal.mp3'));
-        
+
         res.json({
             success: true,
             hasOriginal,
@@ -46,17 +91,17 @@ app.post('/api/upload-novocal-audio', upload.single('audio'), async (req, res) =
     try {
         const { projectName } = req.body;
         const audioFile = req.file;
-        
+
         if (!audioFile) {
             return res.json({ success: false, error: 'No audio file provided' });
         }
-        
+
         const projectPath = path.join(PROJECTS_DIR, projectName);
         const novocalPath = path.join(projectPath, 'audio-novocal.mp3');
-        
+
         fs.copyFileSync(audioFile.path, novocalPath);
         fs.unlinkSync(audioFile.path);
-        
+
         res.json({ success: true });
     } catch (error) {
         res.json({ success: false, error: error.message });
@@ -69,23 +114,23 @@ app.post('/api/separate-vocals', async (req, res) => {
         const { projectName } = req.body;
         const projectPath = path.join(PROJECTS_DIR, projectName);
         const audioPath = path.join(projectPath, 'audio.mp3');
-        
+
         if (!fs.existsSync(audioPath)) {
             return res.json({ success: false, error: 'Original audio file not found' });
         }
-        
+
         // Run the vocal separation script
         const { execSync } = require('child_process');
         const scriptPath = path.join(__dirname, '..', 'separate-vocals-mp3.js');
-        
+
         console.log(`Running vocal separation for ${projectName}...`);
-        
+
         try {
             execSync(`node "${scriptPath}" "${audioPath}"`, {
                 stdio: 'inherit',
                 maxBuffer: 1024 * 1024 * 10
             });
-            
+
             // Check if output file was created
             const novocalPath = path.join(projectPath, 'audio-novocal.mp3');
             if (fs.existsSync(novocalPath)) {
@@ -103,16 +148,27 @@ app.post('/api/separate-vocals', async (req, res) => {
     }
 });
 
+// API: Check if file exists
+app.post('/api/file-exists', (req, res) => {
+    try {
+        const { filePath } = req.body;
+        const exists = fs.existsSync(filePath);
+        res.json({ success: true, exists });
+    } catch (error) {
+        res.json({ success: false, exists: false, error: error.message });
+    }
+});
+
 // API: Check video status
 app.get('/api/check-video-status', async (req, res) => {
     try {
         const { project } = req.query;
         const projectPath = path.join(PROJECTS_DIR, project);
         const outputDir = path.join(projectPath, 'output');
-        
+
         const hasKaraoke = fs.existsSync(path.join(outputDir, 'karaoke.mp4'));
         const hasSingalong = fs.existsSync(path.join(outputDir, 'singalong.mp4'));
-        
+
         res.json({
             success: true,
             hasKaraoke,
@@ -135,7 +191,7 @@ app.get('/api/list-projects', async (req, res) => {
 
             if (stat.isDirectory()) {
                 const files = fs.readdirSync(projectPath);
-                
+
                 // Get line count if lyrics exist
                 let lineCount = null;
                 const lyricsPath = path.join(projectPath, 'lyrics.txt');
@@ -268,7 +324,7 @@ app.post('/api/setup', upload.fields([
 app.post('/api/time-lyrics', async (req, res) => {
     try {
         const { projectPath } = req.body;
-        
+
         // Return URL to timing page
         res.json({
             success: true,
@@ -284,7 +340,7 @@ app.get('/api/get-project-data', async (req, res) => {
     try {
         const { project } = req.query;
         const projectPath = path.join(PROJECTS_DIR, project);
-        
+
         // Try to find lyrics file (prefer lyrics-with-transliteration.txt if it exists)
         let lyricsPath = path.join(projectPath, 'lyrics-with-transliteration.txt');
         if (!fs.existsSync(lyricsPath)) {
@@ -296,7 +352,7 @@ app.get('/api/get-project-data', async (req, res) => {
 
         const lyricsContent = fs.readFileSync(lyricsPath, 'utf-8');
         const allLyrics = lyricsContent.split('\n').filter(l => l.trim());
-        
+
         // Filter out countdown lines (they'll be auto-inserted later)
         const lyrics = allLyrics.filter(line => {
             // Skip countdown lines like "[4] 3 2 1" or "4 [3] 2 1" etc
@@ -304,11 +360,11 @@ app.get('/api/get-project-data', async (req, res) => {
             if (line.toLowerCase().includes('instrumental')) {
                 return true; // Keep instrumental
             }
-            
+
             // Check if line is a countdown pattern
             const countdownPattern = /^(\[?\d\]?\s*){2,4}\|/;
             const isCountdown = countdownPattern.test(line);
-            
+
             return !isCountdown;
         });
 
@@ -327,10 +383,10 @@ app.get('/api/get-audio', async (req, res) => {
         const { project } = req.query;
         const projectPath = path.join(PROJECTS_DIR, project);
         const audioPath = path.join(projectPath, 'audio.mp3');
-        
+
         console.log('Looking for audio at:', audioPath);
         console.log('File exists:', fs.existsSync(audioPath));
-        
+
         if (!fs.existsSync(audioPath)) {
             throw new Error(`Audio file not found at: ${audioPath}`);
         }
@@ -347,29 +403,29 @@ app.post('/api/save-timing', async (req, res) => {
     try {
         const { projectPath: projectName, marks, lyrics } = req.body;
         const projectPath = path.join(PROJECTS_DIR, projectName);
-        
+
         // Apply -1 second adjustment to all marks (already done in browser, but ensure consistency)
         // The browser already applies -1s, so marks are already adjusted
-        
+
         // Process marks and insert countdowns (similar to timing-tool.js logic)
         const COUNTDOWN_THRESHOLD = 10;
         const marksWithCountdowns = [];
-        
+
         for (let i = 0; i < marks.length; i++) {
             const currentMark = marks[i];
-            
+
             if (i > 0) {
                 const prevMark = marks[i - 1];
                 const gap = currentMark.time - prevMark.time;
-                
+
                 if (gap > COUNTDOWN_THRESHOLD) {
                     // Insert countdown slides
-                    const countdownStart = currentMark.time - 4;
+                    const countdownStart = currentMark.time - 4; // 4 seconds before next lyric
                     for (let j = 4; j >= 1; j--) {
-                        const highlightedCountdown = ['4', '3', '2', '1'].map((n, idx) => 
+                        const highlightedCountdown = ['4', '3', '2', '1'].map((n, idx) =>
                             idx === (4 - j) ? `[${n}]` : n
                         ).join(' ');
-                        
+
                         marksWithCountdowns.push({
                             lineIndex: marksWithCountdowns.length,
                             time: countdownStart + (4 - j),
@@ -379,22 +435,22 @@ app.post('/api/save-timing', async (req, res) => {
                     }
                 }
             }
-            
+
             marksWithCountdowns.push(currentMark);
         }
-        
+
         // Generate set-manual-timing.js
         const updatedLyrics = marksWithCountdowns.map(m => m.lyric);
         let content = `// Auto-generated timing file\n// Original lines: ${lyrics.length}\n// With countdowns: ${marksWithCountdowns.length}\n// Total lines: ${marksWithCountdowns.length}\n\n`;
         content += `const fs = require('fs');\nconst path = require('path');\n\n`;
         content += `const timestampsPath = './output/timestamps.json';\nconst data = JSON.parse(fs.readFileSync(timestampsPath, 'utf-8'));\n\n`;
         content += `// Lyric start times (in seconds)\nconst lyricStarts = [\n`;
-        
+
         marksWithCountdowns.forEach((mark, i) => {
             const comment = mark.lyric.substring(0, 40);
-            content += `    ${Math.round(mark.time)},     // ${i}: ${comment}...\n`;
+            content += `    ${mark.time.toFixed(2)},     // ${i}: ${comment}...\n`;
         });
-        
+
         content += `];\n\n`;
         content += `// Calculate end times\nconst totalDuration = data.metadata.duration;\n\n`;
         content += `for (let i = 0; i < lyricStarts.length && i < data.lyrics.length; i++) {\n`;
@@ -405,16 +461,16 @@ app.post('/api/save-timing', async (req, res) => {
         content += `}\n\n`;
         content += `fs.writeFileSync(timestampsPath, JSON.stringify(data, null, 2));\n`;
         content += `console.log('✅ Manual timing applied to', data.lyrics.length, 'lyrics');\n`;
-        
+
         const outputPath = path.join(projectPath, 'set-manual-timing.js');
         fs.writeFileSync(outputPath, content);
-        
+
         // Save lyrics-with-timing.txt
         const updatedLyricsPath = path.join(projectPath, 'lyrics-with-timing.txt');
         fs.writeFileSync(updatedLyricsPath, updatedLyrics.join('\n'));
-        
+
         const countdownsCount = marksWithCountdowns.length - marks.length;
-        
+
         res.json({
             success: true,
             marksCount: marks.length,
@@ -430,19 +486,19 @@ app.post('/api/save-timing', async (req, res) => {
 app.post('/api/check-timing', async (req, res) => {
     try {
         const { projectPath: projectName } = req.body;
-        
+
         // Construct absolute path
         const projectPath = path.join(PROJECTS_DIR, projectName);
         const timingFile = path.join(projectPath, 'lyrics-with-timing.txt');
         const hasTimingFiles = fs.existsSync(timingFile);
-        
+
         if (hasTimingFiles) {
             const content = fs.readFileSync(timingFile, 'utf-8');
             const lines = content.split('\n').filter(l => l.trim());
-            
+
             const originalLyrics = fs.readFileSync(path.join(projectPath, 'lyrics.txt'), 'utf-8');
             const originalCount = originalLyrics.split('\n').filter(l => l.trim()).length;
-            
+
             res.json({
                 success: true,
                 hasTimingFiles: true,
@@ -464,7 +520,7 @@ app.post('/api/check-timing', async (req, res) => {
 app.post('/api/generate-images', async (req, res) => {
     try {
         const { projectPath: projectName } = req.body;
-        
+
         res.setHeader('Content-Type', 'text/plain');
         res.setHeader('Transfer-Encoding', 'chunked');
 
@@ -504,14 +560,14 @@ app.post('/api/generate-images', async (req, res) => {
 app.post('/api/apply-timing', async (req, res) => {
     try {
         const { projectPath: projectName } = req.body;
-        
+
         // Construct absolute path
         const projectPath = path.join(PROJECTS_DIR, projectName);
         const setTimingScript = path.join(projectPath, 'set-manual-timing.js');
-        
+
         console.log('Looking for timing script at:', setTimingScript);
         console.log('Script exists:', fs.existsSync(setTimingScript));
-        
+
         if (!fs.existsSync(setTimingScript)) {
             throw new Error('Timing script not found. Please complete timing step first.');
         }
@@ -529,7 +585,7 @@ app.post('/api/apply-timing', async (req, res) => {
             if (code === 0) {
                 const timestampsFile = path.join(projectPath, 'output', 'timestamps.json');
                 const timestamps = JSON.parse(fs.readFileSync(timestampsFile, 'utf-8'));
-                
+
                 res.json({
                     success: true,
                     segmentCount: timestamps.lyrics.length
@@ -547,26 +603,26 @@ app.post('/api/apply-timing', async (req, res) => {
 app.post('/api/create-video', async (req, res) => {
     try {
         const { projectPath: projectName, purge, videoType } = req.body;
-        
+
         res.setHeader('Content-Type', 'text/plain');
         res.setHeader('Transfer-Encoding', 'chunked');
 
         // Construct absolute paths
         const projectPath = path.join(PROJECTS_DIR, projectName);
-        
+
         // Select audio file based on video type
         const audioFilename = videoType === 'karaoke' ? 'audio-novocal.mp3' : 'audio.mp3';
         const audioPath = path.join(projectPath, audioFilename);
-        
+
         // Check if audio file exists
         if (!fs.existsSync(audioPath)) {
             res.write(`❌ Error: ${audioFilename} not found. Please upload the required audio file.\n`);
             res.end();
             return;
         }
-        
+
         const outputPath = path.join(projectPath, 'output');
-        
+
         // Output filename based on video type
         const outputFilename = videoType === 'karaoke' ? 'karaoke.mp4' : 'singalong.mp4';
 
@@ -606,7 +662,7 @@ app.post('/api/play-video', async (req, res) => {
     try {
         const { projectPath: projectName, videoType } = req.body;
         const projectPath = path.join(PROJECTS_DIR, projectName);
-        
+
         // Select video file based on type
         const videoFilename = videoType === 'karaoke' ? 'karaoke.mp4' : 'singalong.mp4';
         const videoPath = path.join(projectPath, 'output', videoFilename);
@@ -634,14 +690,14 @@ app.post('/api/play-video', async (req, res) => {
 app.post('/api/kill-audio', async (req, res) => {
     try {
         const { execSync } = require('child_process');
-        
+
         // Kill all ffplay processes
         try {
             execSync('killall ffplay 2>/dev/null', { stdio: 'ignore' });
         } catch (e) {
             // Ignore if no processes to kill
         }
-        
+
         res.json({ success: true });
     } catch (error) {
         res.json({ success: false, error: error.message });
@@ -653,7 +709,7 @@ app.post('/api/emergency-kill', async (req, res) => {
     try {
         const { execSync } = require('child_process');
         const killed = [];
-        
+
         // Kill ffplay (audio playback)
         try {
             execSync('killall ffplay 2>/dev/null', { stdio: 'ignore' });
@@ -661,7 +717,7 @@ app.post('/api/emergency-kill', async (req, res) => {
         } catch (e) {
             // Ignore if no processes
         }
-        
+
         // Kill ffmpeg (video encoding)
         try {
             execSync('killall ffmpeg 2>/dev/null', { stdio: 'ignore' });
@@ -669,7 +725,7 @@ app.post('/api/emergency-kill', async (req, res) => {
         } catch (e) {
             // Ignore if no processes
         }
-        
+
         // Kill any node processes running timing-tool
         try {
             execSync('pkill -f timing-tool.js 2>/dev/null', { stdio: 'ignore' });
@@ -677,9 +733,9 @@ app.post('/api/emergency-kill', async (req, res) => {
         } catch (e) {
             // Ignore if no processes
         }
-        
-        res.json({ 
-            success: true, 
+
+        res.json({
+            success: true,
             killed: killed.length > 0 ? killed : ['none (no processes running)']
         });
     } catch (error) {
