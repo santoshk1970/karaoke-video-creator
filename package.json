@@ -1,6 +1,6 @@
 {
   "name": "lyric-sync",
-  "version": "1.0.0",
+  "version": "3.0.0",
   "description": "Sync lyrics to audio and generate timed lyric images",
   "main": "dist/index.js",
   "scripts": {
