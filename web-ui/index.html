@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,25 +11,41 @@
         .step-card {
             transition: all 0.3s ease;
         }
+
         .step-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
+
         .output-panel {
             font-family: 'Courier New', monospace;
             background: #1e1e1e;
             color: #d4d4d4;
         }
+
         .log-line {
             padding: 4px 12px;
             border-left: 3px solid transparent;
         }
-        .log-info { border-left-color: #3b82f6; }
-        .log-success { border-left-color: #10b981; }
-        .log-error { border-left-color: #ef4444; }
-        .log-warning { border-left-color: #f59e0b; }
+
+        .log-info {
+            border-left-color: #3b82f6;
+        }
+
+        .log-success {
+            border-left-color: #10b981;
+        }
+
+        .log-error {
+            border-left-color: #ef4444;
+        }
+
+        .log-warning {
+            border-left-color: #f59e0b;
+        }
     </style>
 </head>
+
 <body class="bg-gray-50">
     <div class="min-h-screen p-6">
         <div class="max-w-7xl mx-auto">
@@ -39,15 +56,20 @@
                         <h1 class="text-4xl font-bold mb-2">🎵 <span id="projectTitle">Karaoke Video Creator</span></h1>
                         <p class="text-purple-100">Create professional karaoke videos with timed lyrics</p>
                     </div>
-                    <div class="flex gap-3">
-                        <button onclick="window.location.href='/projects.html'" 
+                    <div class="flex gap-3 items-center">
+                        <button onclick="window.location.href='/projects.html'"
                             class="bg-white text-purple-600 hover:bg-purple-50 font-bold py-3 px-6 rounded-lg shadow-lg transition">
                             <i class="fas fa-arrow-left mr-2"></i>All Projects
                         </button>
-                        <button onclick="emergencyKillAll()" 
-                            class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition transform hover:scale-105"
+                        <button onclick="window.location.href='/help.html'"
+                            class="bg-white text-purple-600 hover:bg-purple-50 font-semibold py-2 px-3 rounded-lg shadow transition"
+                            title="Help & Documentation">
+                            <i class="fas fa-question-circle"></i>
+                        </button>
+                        <button onclick="emergencyKillAll()"
+                            class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-3 rounded transition"
                             title="Emergency: Kill all audio and processes">
-                            <i class="fas fa-skull-crossbones mr-2"></i>EMERGENCY STOP
+                            <i class="fas fa-stop-circle"></i>
                         </button>
                     </div>
                 </div>
@@ -62,7 +84,8 @@
                             <i class="fas fa-music mr-2"></i>Audio Files
                         </h3>
                         <div class="space-y-3">
-                            <div id="audio-status-original" class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <div id="audio-status-original"
+                                class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                                 <div class="flex items-center">
                                     <i class="fas fa-microphone mr-3 text-purple-600"></i>
                                     <div>
@@ -72,7 +95,8 @@
                                 </div>
                                 <span id="audio-original-status" class="text-xl">⚪</span>
                             </div>
-                            <div id="audio-status-novocal" class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <div id="audio-status-novocal"
+                                class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                                 <div class="flex items-center">
                                     <i class="fas fa-guitar mr-3 text-blue-600"></i>
                                     <div>
@@ -93,7 +117,8 @@
                                 </button>
                             </div>
                             <input type="file" id="novocalAudioFile" accept=".mp3,.wav,.m4a" class="hidden">
-                            <div id="separation-progress" class="hidden mt-3 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                            <div id="separation-progress"
+                                class="hidden mt-3 p-3 bg-purple-50 border border-purple-200 rounded-lg">
                                 <div class="flex items-center justify-between mb-2">
                                     <span class="text-sm font-semibold text-purple-800">
                                         <i class="fas fa-spinner fa-spin mr-2"></i>Separating vocals...
@@ -101,7 +126,9 @@
                                     <span id="separation-time" class="text-xs text-purple-600">0s</span>
                                 </div>
                                 <div class="w-full bg-purple-200 rounded-full h-2">
-                                    <div id="separation-progress-bar" class="bg-purple-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                                    <div id="separation-progress-bar"
+                                        class="bg-purple-600 h-2 rounded-full transition-all duration-300"
+                                        style="width: 0%"></div>
                                 </div>
                                 <p class="text-xs text-purple-600 mt-2">This may take 1-2 minutes...</p>
                             </div>
@@ -117,31 +144,42 @@
                                 </div>
                                 <div>
                                     <h3 class="text-lg font-semibold text-gray-800">Time Lyrics</h3>
-                                    <p class="text-sm text-gray-500">Mark lyrics timing interactively</p>
+                                    <p class="text-sm text-gray-500">Mark lyrics timing manually or interactively</p>
                                 </div>
                             </div>
                             <span id="status-1" class="text-2xl">⚪</span>
                         </div>
-                        
+
                         <div class="space-y-3">
-                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
-                                <i class="fas fa-info-circle mr-2"></i>
-                                <strong>Instructions:</strong>
-                                <ul class="mt-2 ml-4 space-y-1">
+                            <details class="bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
+                                <summary class="p-3 cursor-pointer hover:bg-blue-100 rounded-lg">
+                                    <i class="fas fa-info-circle mr-2"></i>
+                                    <strong>Instructions</strong>
+                                </summary>
+                                <ul class="px-3 pb-3 ml-4 space-y-1">
                                     <li>• Opens in new browser window</li>
                                     <li>• Shows which line to listen for</li>
                                     <li>• Press SPACE when you HEAR that line</li>
                                     <li>• Auto-adjusts -2s (reaction time + early display)</li>
                                 </ul>
-                            </div>
+                            </details>
                             <div class="space-y-2">
-                                <button onclick="reloadLyrics()" id="btn-reload-lyrics"
-                                    class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition">
-                                    <i class="fas fa-sync-alt mr-2"></i>Reload Lyrics File
-                                </button>
+                                <div class="flex gap-2">
+                                    <button onclick="reloadLyrics()" id="btn-reload-lyrics"
+                                        class="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition"
+                                        title="Upload a new lyrics file to replace the current one">
+                                        <i class="fas fa-sync-alt mr-2"></i>Reload Lyrics
+                                    </button>
+                                    <button onclick="openTimingEditor()" id="btn-edit-timing" disabled
+                                        class="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-2 px-4 rounded-lg transition disabled:bg-gray-300 disabled:cursor-not-allowed"
+                                        title="Fine-tune timing after generation (with propagate feature)">
+                                        <i class="fas fa-edit mr-2"></i>Edit Timing
+                                    </button>
+                                </div>
                                 <div class="flex gap-2">
                                     <button onclick="timeLyrics()" id="btn-time" disabled
-                                        class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition disabled:bg-gray-300 disabled:cursor-not-allowed">
+                                        class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition disabled:bg-gray-300 disabled:cursor-not-allowed"
+                                        title="Open timing tool to mark when each lyric appears (press SPACE when you hear the line)">
                                         <i class="fas fa-clock mr-2"></i>Start Timing Tool
                                     </button>
                                     <button onclick="killAudio()" id="btn-kill-audio" disabled
@@ -150,96 +188,41 @@
                                         <i class="fas fa-stop-circle"></i>
                                     </button>
                                 </div>
-                                <button onclick="checkTimingComplete()" id="btn-check-timing" disabled
-                                    class="w-full bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg transition disabled:bg-gray-300 disabled:cursor-not-allowed">
-                                    <i class="fas fa-check-circle mr-2"></i>Check if Timing Complete
-                                </button>
                             </div>
                             <input type="file" id="lyricsFile" accept=".txt" class="hidden">
                         </div>
                     </div>
 
-                    <!-- Step 3: Generate Images -->
+                    <!-- Step 2: Generate Videos -->
                     <div class="step-card bg-white rounded-lg shadow p-6">
                         <div class="flex items-start justify-between mb-4">
                             <div class="flex items-center space-x-3">
                                 <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                                    <span class="text-green-600 font-bold">3</span>
+                                    <span class="text-green-600 font-bold">2</span>
                                 </div>
                                 <div>
-                                    <h3 class="text-lg font-semibold text-gray-800">Generate Images</h3>
-                                    <p class="text-sm text-gray-500">Create lyric slide images</p>
+                                    <h3 class="text-lg font-semibold text-gray-800">Generate Videos</h3>
+                                    <p class="text-sm text-gray-500">Generate karaoke and sing-along videos</p>
                                 </div>
                             </div>
-                            <span id="status-3" class="text-2xl">⚪</span>
+                            <span id="status-2" class="text-2xl">⚪</span>
                         </div>
-                        
-                        <button onclick="generateImages()" id="btn-images" disabled
-                            class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition disabled:bg-gray-300 disabled:cursor-not-allowed">
-                            <i class="fas fa-images mr-2"></i>Generate Images
-                        </button>
-                    </div>
 
-                    <!-- Step 4: Create Videos -->
-                    <div class="step-card bg-white rounded-lg shadow p-6">
-                        <div class="flex items-start justify-between mb-4">
-                            <div class="flex items-center space-x-3">
-                                <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                                    <span class="text-red-600 font-bold">4</span>
-                                </div>
-                                <div>
-                                    <h3 class="text-lg font-semibold text-gray-800">Create Videos</h3>
-                                    <p class="text-sm text-gray-500">Generate Karaoke and/or Sing-along videos</p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="space-y-3">
-                            <!-- Karaoke Video -->
-                            <div class="border border-blue-200 rounded-lg p-3">
-                                <div class="flex items-center justify-between mb-2">
-                                    <div class="flex items-center">
-                                        <i class="fas fa-guitar mr-2 text-blue-600"></i>
-                                        <span class="font-semibold text-sm">Karaoke (No Vocals)</span>
-                                    </div>
-                                    <span id="status-karaoke" class="text-xl">⚪</span>
-                                </div>
-                                <button onclick="createVideo('karaoke')" id="btn-video-karaoke" disabled
-                                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition disabled:bg-gray-300 disabled:cursor-not-allowed">
-                                    <i class="fas fa-video mr-2"></i>Create Karaoke Video
-                                </button>
-                            </div>
-                            
-                            <!-- Sing-along Video -->
-                            <div class="border border-purple-200 rounded-lg p-3">
-                                <div class="flex items-center justify-between mb-2">
-                                    <div class="flex items-center">
-                                        <i class="fas fa-microphone mr-2 text-purple-600"></i>
-                                        <span class="font-semibold text-sm">Sing-along (With Vocals)</span>
-                                    </div>
-                                    <span id="status-singalong" class="text-xl">⚪</span>
-                                </div>
-                                <button onclick="createVideo('singalong')" id="btn-video-singalong" disabled
-                                    class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition disabled:bg-gray-300 disabled:cursor-not-allowed">
-                                    <i class="fas fa-video mr-2"></i>Create Sing-along Video
-                                </button>
-                            </div>
-                            
-                            <div class="flex items-center space-x-2 pt-2">
-                                <input type="checkbox" id="purgeMode" class="w-4 h-4 text-red-600 rounded">
-                                <label for="purgeMode" class="text-sm text-gray-700">
-                                    Purge mode (overwrite without backup)
-                                </label>
-                            </div>
+                        <div class="space-y-2">
+                            <button onclick="generateImagesAndVideo()" id="btn-generate-all" disabled
+                                class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition disabled:bg-gray-300 disabled:cursor-not-allowed"
+                                title="Generate lyric images and create both sing-along and karaoke videos (if instrumental exists)">
+                                <i class="fas fa-play-circle mr-2"></i>Generate Videos
+                            </button>
                         </div>
                     </div>
 
-                    <!-- Step 5: Play Videos -->
+                    <!-- Step 3: Play Videos -->
                     <div class="step-card bg-white rounded-lg shadow p-6">
                         <div class="flex items-start justify-between mb-4">
                             <div class="flex items-center space-x-3">
                                 <div class="w-10 h-10 bg-pink-100 rounded-full flex items-center justify-center">
-                                    <span class="text-pink-600 font-bold">5</span>
+                                    <span class="text-pink-600 font-bold">3</span>
                                 </div>
                                 <div>
                                     <h3 class="text-lg font-semibold text-gray-800">Play Videos</h3>
@@ -247,14 +230,16 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="space-y-2">
                             <button onclick="playVideo('karaoke')" id="btn-play-karaoke" disabled
-                                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition disabled:bg-gray-300 disabled:cursor-not-allowed">
+                                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition disabled:bg-gray-300 disabled:cursor-not-allowed"
+                                title="Play karaoke video with instrumental audio only (no vocals)">
                                 <i class="fas fa-play mr-2"></i>Play Karaoke Video
                             </button>
                             <button onclick="playVideo('singalong')" id="btn-play-singalong" disabled
-                                class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition disabled:bg-gray-300 disabled:cursor-not-allowed">
+                                class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition disabled:bg-gray-300 disabled:cursor-not-allowed"
+                                title="Play sing-along video with original vocals">
                                 <i class="fas fa-play mr-2"></i>Play Sing-along Video
                             </button>
                         </div>
@@ -286,4 +271,5 @@
 
     <script src="app.js"></script>
 </body>
+
 </html>

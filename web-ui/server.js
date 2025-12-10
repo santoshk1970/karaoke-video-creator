@@ -743,6 +743,89 @@ app.post('/api/emergency-kill', async (req, res) => {
     }
 });
 
+// API: Get timing data for editor
+app.get('/api/get-timing-data', async (req, res) => {
+    try {
+        const { project } = req.query;
+        const projectPath = path.join(PROJECTS_DIR, project);
+        const timestampsPath = path.join(projectPath, 'output/timestamps.json');
+
+        if (!fs.existsSync(timestampsPath)) {
+            return res.json({ success: false, error: 'Timestamps file not found. Generate images first.' });
+        }
+
+        const data = JSON.parse(fs.readFileSync(timestampsPath, 'utf-8'));
+        res.json({ success: true, data });
+    } catch (error) {
+        res.json({ success: false, error: error.message });
+    }
+});
+
+// API: Update timing with propagation
+app.post('/api/update-timing', async (req, res) => {
+    try {
+        const { project, updates } = req.body;
+        const projectPath = path.join(PROJECTS_DIR, project);
+        const timestampsPath = path.join(projectPath, 'output/timestamps.json');
+
+        if (!fs.existsSync(timestampsPath)) {
+            return res.json({ success: false, error: 'Timestamps file not found' });
+        }
+
+        const data = JSON.parse(fs.readFileSync(timestampsPath, 'utf-8'));
+
+        // Apply updates with propagation
+        updates.forEach(update => {
+            const { index, newStartTime, propagate } = update;
+            const oldStartTime = data.lyrics[index].startTime;
+            const delta = newStartTime - oldStartTime;
+
+            // Update this lyric
+            data.lyrics[index].startTime = newStartTime;
+
+            // Propagate if checked
+            if (propagate && delta !== 0) {
+                for (let i = index + 1; i < data.lyrics.length; i++) {
+                    data.lyrics[i].startTime += delta;
+                }
+            }
+        });
+
+        // Recalculate all endTimes
+        for (let i = 0; i < data.lyrics.length; i++) {
+            const nextStart = i < data.lyrics.length - 1
+                ? data.lyrics[i + 1].startTime
+                : data.metadata.duration;
+            data.lyrics[i].endTime = nextStart;
+        }
+
+        // Save updated data
+        fs.writeFileSync(timestampsPath, JSON.stringify(data, null, 2));
+
+        res.json({ success: true, updatedCount: updates.length });
+    } catch (error) {
+        res.json({ success: false, error: error.message });
+    }
+});
+
+// API: Delete images to force regeneration
+app.post('/api/delete-images', async (req, res) => {
+    try {
+        const { project } = req.body;
+        const projectPath = path.join(PROJECTS_DIR, project);
+        const imagesDir = path.join(projectPath, 'output/images');
+
+        if (fs.existsSync(imagesDir)) {
+            fs.rmSync(imagesDir, { recursive: true, force: true });
+            res.json({ success: true, message: 'Images deleted' });
+        } else {
+            res.json({ success: true, message: 'No images to delete' });
+        }
+    } catch (error) {
+        res.json({ success: false, error: error.message });
+    }
+});
+
 const PORT = 8080;
 app.listen(PORT, () => {
     console.log(`🎵 Karaoke Video Creator UI running at http://localhost:${PORT}`);

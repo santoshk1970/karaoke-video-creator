@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Help - Karaoke Video Creator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body class="bg-gray-50">
+    <div class="min-h-screen p-6">
+        <div class="max-w-4xl mx-auto">
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg shadow-lg p-8 mb-6 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-4xl font-bold mb-2">📖 Help Guide</h1>
+                        <p class="text-purple-100">Learn how to create karaoke videos</p>
+                    </div>
+                    <button onclick="window.history.back()"
+                        class="bg-white text-purple-600 hover:bg-purple-50 font-bold py-3 px-6 rounded-lg shadow-lg transition">
+                        <i class="fas fa-arrow-left mr-2"></i>Back
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quick Start -->
+            <div class="bg-white rounded-lg shadow p-6 mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">🚀 Quick Start</h2>
+                <ol class="space-y-3 text-gray-700">
+                    <li><strong>1. Create Project:</strong> Upload audio file and lyrics text file</li>
+                    <li><strong>2. Time Lyrics:</strong> Press SPACE when you hear each line (auto-adjusts -2s)</li>
+                    <li><strong>3. Generate Videos:</strong> Creates images and videos automatically</li>
+                    <li><strong>4. Play:</strong> Watch your karaoke videos!</li>
+                </ol>
+            </div>
+
+            <!-- Step by Step -->
+            <div class="bg-white rounded-lg shadow p-6 mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">📝 Detailed Steps</h2>
+
+                <div class="space-y-6">
+                    <!-- Step 1 -->
+                    <div>
+                        <h3 class="text-xl font-semibold text-blue-600 mb-2">Step 1: Time Lyrics</h3>
+                        <ul class="ml-6 space-y-2 text-gray-700">
+                            <li><strong>Reload Lyrics:</strong> Upload a new lyrics file if you made changes</li>
+                            <li><strong>Start Timing Tool:</strong> Opens timing interface in new window</li>
+                            <li><strong>Edit Timing:</strong> Fine-tune timing after generation (with propagate feature)
+                            </li>
+                        </ul>
+                        <div class="mt-3 p-3 bg-blue-50 rounded-lg text-sm text-blue-800">
+                            <strong>💡 Tip:</strong> The timing tool auto-adjusts -2 seconds for reaction time and early
+                            display
+                        </div>
+                    </div>
+
+                    <!-- Step 2 -->
+                    <div>
+                        <h3 class="text-xl font-semibold text-green-600 mb-2">Step 2: Generate Videos</h3>
+                        <ul class="ml-6 space-y-2 text-gray-700">
+                            <li>Automatically generates lyric images</li>
+                            <li>Creates sing-along video (with vocals)</li>
+                            <li>Creates karaoke video (if instrumental audio exists)</li>
+                        </ul>
+                        <div class="mt-3 p-3 bg-green-50 rounded-lg text-sm text-green-800">
+                            <strong>💡 Tip:</strong> Use "Separate Vocals" to create instrumental audio for karaoke
+                        </div>
+                    </div>
+
+                    <!-- Step 3 -->
+                    <div>
+                        <h3 class="text-xl font-semibold text-pink-600 mb-2">Step 3: Play Videos</h3>
+                        <ul class="ml-6 space-y-2 text-gray-700">
+                            <li><strong>Karaoke:</strong> Instrumental audio only (for singing along)</li>
+                            <li><strong>Sing-along:</strong> Original audio with vocals (for practice)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Audio Management -->
+            <div class="bg-white rounded-lg shadow p-6 mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">🎵 Audio Management</h2>
+                <div class="space-y-4 text-gray-700">
+                    <div>
+                        <h4 class="font-semibold text-purple-600">Separate Vocals (AI)</h4>
+                        <p>Uses AI to extract instrumental audio from your song (takes 1-2 minutes)</p>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-blue-600">Upload Instrumental</h4>
+                        <p>If you already have instrumental audio, upload it directly</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Timing Editor -->
+            <div class="bg-white rounded-lg shadow p-6 mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">⏱️ Timing Editor</h2>
+                <div class="space-y-3 text-gray-700">
+                    <p>Fine-tune timing without re-running the timing tool:</p>
+                    <ul class="ml-6 space-y-2">
+                        <li><strong>Edit Times:</strong> Adjust start times by 0.01 second increments</li>
+                        <li><strong>Propagate:</strong> Check box to shift all subsequent lyrics by the same amount</li>
+                        <li><strong>Regenerate:</strong> One button regenerates both images and videos</li>
+                    </ul>
+                    <div class="mt-3 p-3 bg-yellow-50 rounded-lg text-sm text-yellow-800">
+                        <strong>Example:</strong> Change lyric 5 from 22.00s to 24.00s with propagate → all lyrics after
+                        #5 shift +2 seconds
+                    </div>
+                </div>
+            </div>
+
+            <!-- Keyboard Shortcuts -->
+            <div class="bg-white rounded-lg shadow p-6 mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">⌨️ Keyboard Shortcuts</h2>
+                <div class="grid grid-cols-2 gap-4 text-gray-700">
+                    <div class="p-3 bg-gray-50 rounded-lg">
+                        <strong class="text-blue-600">SPACE</strong>
+                        <p class="text-sm">Mark lyric timing</p>
+                    </div>
+                    <div class="p-3 bg-gray-50 rounded-lg">
+                        <strong class="text-blue-600">Q</strong>
+                        <p class="text-sm">Quit timing tool</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Troubleshooting -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">🔧 Troubleshooting</h2>
+                <div class="space-y-3 text-gray-700">
+                    <div>
+                        <strong class="text-red-600">Audio won't stop playing?</strong>
+                        <p class="text-sm ml-4">Use the red stop button (🛑) in the header to kill all audio</p>
+                    </div>
+                    <div>
+                        <strong class="text-red-600">Timing is off?</strong>
+                        <p class="text-sm ml-4">Use the "Edit Timing" button to adjust without re-timing everything</p>
+                    </div>
+                    <div>
+                        <strong class="text-red-600">Video generation failed?</strong>
+                        <p class="text-sm ml-4">Check the console output for error messages</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
