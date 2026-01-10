@@ -248,7 +248,7 @@ async function timeLyrics() {
 
     updateStatus(1, 'running');
     log('Opening timing tool in new window...', 'info');
-    log('💡 Press SPACE when you hear each line (auto-adjusts -2s for reaction time)', 'info');
+    log('💡 Press SPACE when you hear each line (lyrics display when marked)', 'info');
 
     // Enable kill button while timing is active
     enableButton('btn-kill-audio');

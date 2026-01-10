@@ -22,6 +22,7 @@ const readline = require('readline');
 // Configuration
 const COUNTDOWN_THRESHOLD = 10; // seconds
 const COUNTDOWN_DURATION = 4; // 4 seconds for "4 3 2 1" (1s per number)
+const REACTION_TIME_ADJUSTMENT = 0.0; // seconds to subtract from spacebar press (0 = display when marked)
 
 class TimingTool {
     constructor(projectFolder) {
@@ -95,8 +96,8 @@ class TimingTool {
 
     markTime() {
         const rawTime = this.getCurrentTime();
-        // Apply -2 second adjustment (reaction time + display earlier)
-        const adjustedTime = Math.max(0, rawTime - 2.0);
+        // Apply reaction time adjustment (0 = display exactly when marked)
+        const adjustedTime = Math.max(0, rawTime - REACTION_TIME_ADJUSTMENT);
 
         this.marks.push({
             lineIndex: this.currentLineIndex,
@@ -267,6 +268,19 @@ class TimingTool {
                     console.log(`\n🎯 Auto-inserted countdown before line ${i + 2} (gap: ${gap.toFixed(1)}s)`);
                 }
             }
+        }
+
+        // Insert prelude screen if first mark is not at time 0
+        if (marksWithCountdowns.length > 0 && marksWithCountdowns[0].time > 0) {
+            const firstMarkTime = marksWithCountdowns[0].time;
+            const preludeMark = {
+                lineIndex: -1,
+                time: 0.0,
+                lyric: '♪ ♪',
+                isCountdown: false
+            };
+            marksWithCountdowns.unshift(preludeMark);
+            console.log(`\n🎵 Added prelude screen from 0.0s to ${firstMarkTime.toFixed(1)}s`);
         }
 
         // Sort by time

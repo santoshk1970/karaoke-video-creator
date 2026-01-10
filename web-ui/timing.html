@@ -128,10 +128,10 @@
             <!-- Footer -->
             <div class="bg-white rounded-b-2xl shadow-2xl p-3">
                 <div class="flex items-center justify-between">
-                    <div class="text-xs text-gray-500">
-                        <i class="fas fa-info-circle mr-1"></i>
-                        Auto-adjusts -2s
-                    </div>
+                        <div class="text-xs text-gray-500">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            Display when marked (0s offset)
+                        </div>
                     <button onclick="stopAudio()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">
                         <i class="fas fa-stop-circle mr-1"></i>Stop
                     </button>
@@ -162,6 +162,9 @@
         let timerInterval = null;
         let projectPath = '';
         let audioElement = null;
+        
+        // Configuration
+        const REACTION_TIME_ADJUSTMENT = 0.0; // seconds to subtract from spacebar press (0 = display when marked)
 
         // Get project path from URL
         const urlParams = new URLSearchParams(window.location.search);
@@ -304,10 +307,10 @@
 
         function markTime() {
             if (currentLineIndex >= lyrics.length) return;
-
+ 
             const rawTime = getCurrentTime();
-            // Apply -2 second adjustment (reaction time + display earlier)
-            const adjustedTime = Math.max(0, rawTime - 2.0);
+            // Apply reaction time adjustment (0 = display exactly when marked)
+            const adjustedTime = Math.max(0, rawTime - REACTION_TIME_ADJUSTMENT);
             
             marks.push({
                 lineIndex: currentLineIndex,

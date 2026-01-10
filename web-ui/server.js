@@ -415,8 +415,8 @@ app.post('/api/save-timing', async (req, res) => {
         const { projectPath: projectName, marks, lyrics } = req.body;
         const projectPath = path.join(PROJECTS_DIR, projectName);
 
-        // Apply -1 second adjustment to all marks (already done in browser, but ensure consistency)
-        // The browser already applies -1s, so marks are already adjusted
+        // No adjustment applied - marks reflect exact time when user pressed spacebar
+        // This matches the browser timing tool behavior
 
         // Process marks and insert countdowns (similar to timing-tool.js logic)
         const COUNTDOWN_THRESHOLD = 10;
@@ -475,6 +475,19 @@ app.post('/api/save-timing', async (req, res) => {
             }
 
             marksWithCountdowns.push(currentMark);
+        }
+
+        // Insert prelude screen if first mark is not at time 0
+        if (marksWithCountdowns.length > 0 && marksWithCountdowns[0].time > 0) {
+            const firstMarkTime = marksWithCountdowns[0].time;
+            const preludeMark = {
+                lineIndex: -1,
+                time: 0.0,
+                lyric: '♪ ♪',
+                isCountdown: false
+            };
+            marksWithCountdowns.unshift(preludeMark);
+            console.log(`   Added prelude screen from 0.0s to ${firstMarkTime.toFixed(1)}s`);
         }
 
         // Generate set-manual-timing.js
