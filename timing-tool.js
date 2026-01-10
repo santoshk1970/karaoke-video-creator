@@ -234,60 +234,8 @@ class TimingTool {
     }
 
     insertCountdowns() {
-        // Find gaps > COUNTDOWN_THRESHOLD and insert countdown slides
-        const marksWithCountdowns = [];
-
-        for (let i = 0; i < this.marks.length; i++) {
-            const currentMark = this.marks[i];
-            const nextMark = this.marks[i + 1];
-
-            marksWithCountdowns.push(currentMark);
-
-            // Check if this is an instrumental line
-            const isInstrumental = currentMark.lyric.includes('♪ Instrumental ♪');
-
-            if (isInstrumental && nextMark) {
-                const gap = nextMark.time - currentMark.time;
-
-                if (gap > COUNTDOWN_THRESHOLD) {
-                    // Insert countdown slides
-                    const countdownStart = nextMark.time - COUNTDOWN_DURATION;
-
-                    for (let num = 4; num >= 1; num--) {
-                        const countdownTime = countdownStart + (4 - num);
-                        const countdownText = `${num === 4 ? '[4]' : '4'} ${num === 3 ? '[3]' : '3'} ${num === 2 ? '[2]' : '2'} ${num === 1 ? '[1]' : '1'} | ${num === 4 ? '[4]' : '4'} ${num === 3 ? '[3]' : '3'} ${num === 2 ? '[2]' : '2'} ${num === 1 ? '[1]' : '1'}`;
-
-                        marksWithCountdowns.push({
-                            lineIndex: -1,
-                            time: countdownTime,
-                            lyric: countdownText,
-                            isCountdown: true
-                        });
-                    }
-
-                    console.log(`\n🎯 Auto-inserted countdown before line ${i + 2} (gap: ${gap.toFixed(1)}s)`);
-                }
-            }
-        }
-
-        // Insert prelude screen if first mark is not at time 0
-        if (marksWithCountdowns.length > 0 && marksWithCountdowns[0].time > 0) {
-            const firstMarkTime = marksWithCountdowns[0].time;
-            const preludeMark = {
-                lineIndex: -1,
-                time: 0.0,
-                lyric: '♪ ♪',
-                isCountdown: false
-            };
-            marksWithCountdowns.unshift(preludeMark);
-            console.log(`\n🎵 Added prelude screen from 0.0s to ${firstMarkTime.toFixed(1)}s`);
-        }
-
-        // Sort by time
-        marksWithCountdowns.sort((a, b) => a.time - b.time);
-
-        return marksWithCountdowns;
-    }
+        // Only user manual marks are used, no automatic countdowns/instrumentals
+        return this.marks;
 
     generateTimingFile() {
         console.log('\n🔄 Processing marks...');

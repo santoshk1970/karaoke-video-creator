@@ -20,8 +20,6 @@ import { spawn, ChildProcess, execSync } from 'child_process';
 import * as readline from 'readline';
 
 // Configuration
-const COUNTDOWN_THRESHOLD = 10; // seconds
-const COUNTDOWN_DURATION = 4; // 4 seconds for "4 3 2 1" (1s per number)
 const REACTION_TIME_ADJUSTMENT = 0.0; // seconds to subtract from spacebar press (0 = display when marked)
 
 interface Mark {
@@ -242,67 +240,13 @@ export class TimingTool {
         });
     }
 
-    private insertCountdowns(): Mark[] {
-        // Find gaps > COUNTDOWN_THRESHOLD and insert countdown slides
-        const marksWithCountdowns: Mark[] = [];
-
-        for (let i = 0; i < this.marks.length; i++) {
-            const currentMark = this.marks[i];
-            const nextMark = this.marks[i + 1];
-
-            marksWithCountdowns.push(currentMark);
-
-            // Check if this is an instrumental line
-            const isInstrumental = currentMark.lyric.includes('♪ Instrumental ♪');
-
-            if (isInstrumental && nextMark) {
-                const gap = nextMark.time - currentMark.time;
-
-                if (gap > COUNTDOWN_THRESHOLD) {
-                    // Insert countdown slides
-                    const countdownStart = nextMark.time - COUNTDOWN_DURATION;
-
-                    for (let num = 4; num >= 1; num--) {
-                        const countdownTime = countdownStart + (4 - num);
-                        const countdownText = `${num === 4 ? '[4]' : '4'} ${num === 3 ? '[3]' : '3'} ${num === 2 ? '[2]' : '2'} ${num === 1 ? '[1]' : '1'} | ${num === 4 ? '[4]' : '4'} ${num === 3 ? '[3]' : '3'} ${num === 2 ? '[2]' : '2'} ${num === 1 ? '[1]' : '1'}`;
-
-                        marksWithCountdowns.push({
-                            lineIndex: -1,
-                            time: countdownTime,
-                            lyric: countdownText,
-                            isCountdown: true
-                        });
-                    }
-
-                    console.log(`\n🎯 Auto-inserted countdown before line ${i + 2} (gap: ${gap.toFixed(1)}s)`);
-                }
-            }
-        }
-
-        // Insert prelude screen if first mark is not at time 0
-        if (marksWithCountdowns.length > 0 && marksWithCountdowns[0].time > 0) {
-            const firstMarkTime = marksWithCountdowns[0].time;
-            const preludeMark: Mark = {
-                lineIndex: -1,
-                time: 0.0,
-                lyric: '♪ ♪',
-                isCountdown: false
-            };
-            marksWithCountdowns.unshift(preludeMark);
-            console.log(`\n🎵 Added prelude screen from 0.0s to ${firstMarkTime.toFixed(1)}s`);
-        }
-
-        // Sort by time
-        marksWithCountdowns.sort((a, b) => a.time - b.time);
-
-        return marksWithCountdowns;
-    }
+    // REMOVED: insertCountdowns() - no longer needed
+    // Only user manual marks are used, no automatic countdowns/instrumentals
 
     private generateTimingFile(): void {
         console.log('\n🔄 Processing marks...');
 
-        // Insert countdowns for long instrumentals
-        const allMarks = this.insertCountdowns();
+        const allMarks = this.marks;
 
         // Update lyrics array to include countdown slides
         const updatedLyrics: string[] = [];
