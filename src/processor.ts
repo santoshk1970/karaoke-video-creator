@@ -91,6 +91,23 @@ export class LyricSyncProcessor {
         }
     }
 
+    private async getAudioDuration(audioFile: string): Promise<number> {
+        if (!fs.existsSync(audioFile)) {
+            throw new Error(`Audio file not found: ${audioFile}`);
+        }
+
+        const { execSync: execSyncCmd } = require('child_process');
+        const command = `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${audioFile}"`;
+        const { stdout } = execSyncCmd(command);
+        const duration = parseFloat(stdout.trim());
+
+        if (isNaN(duration) || duration <= 0) {
+            throw new Error(`Invalid audio duration: ${duration}`);
+        }
+
+        return duration;
+    }
+
     async process(): Promise<void> {
         console.log('🔄 Step 1: Reading lyrics file...');
         const lyrics = this.readLyrics();
@@ -98,70 +115,72 @@ export class LyricSyncProcessor {
 
         console.log('🔄 Step 2: Analyzing audio and aligning lyrics...');
 
-        // Check if timestamps.json already exists (from manual timing)
-        const timestampsPath = path.join(this.config.outputDir, 'timestamps.json');
-        let timedLyrics: TimedLyric[];
-
-        if (fs.existsSync(timestampsPath)) {
-            console.log('   Using existing timestamps from timestamps.json...');
-            const timestampsData = JSON.parse(fs.readFileSync(timestampsPath, 'utf-8'));
-            timedLyrics = timestampsData.lyrics.map((lyric: any) => ({
-                index: lyric.index,
-                startTime: lyric.startTime,
-                endTime: lyric.endTime,
-                text: lyric.text
-            }));
-            console.log(`   Loaded ${timedLyrics.length} pre-timed segments\n`);
-        } else {
-            timedLyrics = await this.alignmentEngine.align(
-                this.config.audioFile,
-                lyrics,
-                this.config.vocalFile
-            );
-            console.log(`   Aligned ${timedLyrics.length} lyric segments\n`);
-
-            // Save initial alignment (unexpanded)
-            await this.exportTimestamps(timedLyrics);
-        }
-
-        // STEP 2a: MANUAL TIMING APPLICATION
-        // Must apply manual timing BEFORE splitting instrumental into segments
-        // because manual timing script relies on original line indices.
+        const timestampsOutputPath = path.join(this.config.outputDir, 'timestamps.json');
         const manualTimingScript = path.join(path.dirname(this.config.outputDir), 'set-manual-timing.js');
+        let manualTimedLyrics: TimedLyric[];
+
         if (fs.existsSync(manualTimingScript)) {
-            console.log('\n🔄 Applying manual timing adjustment...');
+            console.log('   Manual timing script found, creating initial timestamps...');
+            const audioDuration = await this.getAudioDuration(this.config.audioFile);
 
-            // Ensure we are working with unexpanded file
-            // Write current state to timestamps.json so script can read it
-            await this.exportTimestamps(timedLyrics);
+            const minimalTimestamps = {
+                audioDuration: audioDuration,
+                lyrics: lyrics.map((text, index) => ({
+                    index: index,
+                    startTime: 0,
+                    endTime: 0,
+                    text: text
+                }))
+            };
 
+            fs.writeFileSync(timestampsOutputPath, JSON.stringify(minimalTimestamps, null, 2));
+            console.log(`   Created minimal timestamps.json with duration: ${audioDuration.toFixed(1)}s`);
+
+            console.log('   Running manual timing script...');
             const { execSync } = require('child_process');
             try {
-                // Run the script
                 execSync(`node "${manualTimingScript}"`, {
                     cwd: path.dirname(this.config.outputDir),
                     stdio: 'inherit'
                 });
 
-                // Reload the updated timestamps (still unexpanded)
-                const updatedData = JSON.parse(fs.readFileSync(timestampsPath, 'utf-8'));
-                timedLyrics = updatedData.lyrics.map((lyric: any) => ({
+                const updatedData = JSON.parse(fs.readFileSync(timestampsOutputPath, 'utf-8'));
+                manualTimedLyrics = updatedData.lyrics.map((lyric: any) => ({
                     index: lyric.index,
                     startTime: lyric.startTime,
                     endTime: lyric.endTime,
                     text: lyric.text
                 }));
-                console.log('   ✅ Manual timing applied successfully\n');
+                console.log(`   ✅ Loaded ${manualTimedLyrics.length} manually timed segments\n`);
             } catch (error: any) {
                 console.error('   ❌ Failed to apply manual timing:', error.message);
                 throw new Error(`Manual timing script failed. Fix the script or delete it to proceed. Error: ${error.message}`);
             }
+        } else if (fs.existsSync(timestampsOutputPath)) {
+            console.log('   Using existing timestamps from timestamps.json...');
+            const timestampsData = JSON.parse(fs.readFileSync(timestampsOutputPath, 'utf-8'));
+            manualTimedLyrics = timestampsData.lyrics.map((lyric: any) => ({
+                index: lyric.index,
+                startTime: lyric.startTime,
+                endTime: lyric.endTime,
+                text: lyric.text
+            }));
+            console.log(`   Loaded ${manualTimedLyrics.length} pre-timed segments\n`);
+        } else {
+            manualTimedLyrics = await this.alignmentEngine.align(
+                this.config.audioFile,
+                lyrics,
+                this.config.vocalFile
+            );
+            console.log(`   Aligned ${manualTimedLyrics.length} lyric segments\n`);
+
+            await this.exportTimestamps(manualTimedLyrics);
         }
 
         // PASS 1: Virtual pass - calculate splits without generating anything
         console.log('🔄 Step 3a: Planning image generation (analyzing splits)...');
-        const expandedLyrics = this.planImageGeneration(timedLyrics);
-        console.log(`   Planned ${expandedLyrics.length} images (${expandedLyrics.length - timedLyrics.length} splits)\n`);
+        const expandedLyrics = this.planImageGeneration(manualTimedLyrics);
+        console.log(`   Planned ${expandedLyrics.length} images (${expandedLyrics.length - manualTimedLyrics.length} splits)\n`);
 
         // PASS 2: Execution pass - generate images based on plan
         console.log('🔄 Step 3b: Generating lyric images...');
@@ -175,7 +194,7 @@ export class LyricSyncProcessor {
         console.log('   Render manifest exported to timestamps-render.json');
 
         // Also save unexpanded timestamps to timestamps.json to preserve manual timing structure
-        await this.exportTimestamps(timedLyrics);
+        await this.exportTimestamps(manualTimedLyrics);
         console.log('   Source timestamps saved to timestamps.json');
 
         // Generate video if requested
