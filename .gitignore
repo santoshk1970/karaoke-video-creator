@@ -1,7 +1,17 @@
+# Node modules
 node_modules/
+package-lock.json
+
+# Python virtual environment
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
 dist/
-output/
-output-vocals/
+build/
 projects/
 *.log
 .DS_Store

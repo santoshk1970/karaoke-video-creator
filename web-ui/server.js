@@ -55,14 +55,25 @@ app.post('/api/reload-lyrics', upload.single('lyrics'), (req, res) => {
             if (fs.existsSync(timestampsPath)) {
                 fs.unlinkSync(timestampsPath);
             }
+            // Also delete render manifest
+            const renderPath = path.join(outputDir, 'timestamps-render.json');
+            if (fs.existsSync(renderPath)) {
+                fs.unlinkSync(renderPath);
+            }
             if (fs.existsSync(imagesDir)) {
                 fs.rmSync(imagesDir, { recursive: true, force: true });
             }
         }
 
+        // Also delete stale manual timing script from project root
+        const manualTimingScript = path.join(projectDir, 'set-manual-timing.js');
+        if (fs.existsSync(manualTimingScript)) {
+            fs.unlinkSync(manualTimingScript);
+        }
+
         res.json({ success: true, lineCount });
     } catch (error) {
-        console.error('Reload lyrics error:', error);
+        console.error('Error reloading lyrics:', error);
         res.json({ success: false, error: error.message });
     }
 });
@@ -409,15 +420,42 @@ app.post('/api/save-timing', async (req, res) => {
 
         // Process marks and insert countdowns (similar to timing-tool.js logic)
         const COUNTDOWN_THRESHOLD = 10;
+        const INSTRUMENTAL_THRESHOLD = 15; // Threshold for auto-inserting instrumental break
         const marksWithCountdowns = [];
 
         for (let i = 0; i < marks.length; i++) {
-            const currentMark = marks[i];
+            let currentMark = marks[i];
 
             if (i > 0) {
-                const prevMark = marks[i - 1];
-                const gap = currentMark.time - prevMark.time;
+                const prevMark = marksWithCountdowns[marksWithCountdowns.length - 1];
+                let gap = currentMark.time - prevMark.time;
 
+                // Check for auto-instrumental insertion
+                // If gap is large AND current line isn't instrumental AND previous line wasn't instrumental
+                if (gap > INSTRUMENTAL_THRESHOLD &&
+                    !currentMark.lyric.includes('Instrumental') &&
+                    !prevMark.lyric.includes('Instrumental')) {
+
+                    // Start instrumental 3 seconds after previous line
+                    const instrumentalTime = prevMark.time + 3.0;
+
+                    // Create instrumental mark
+                    const instrumentalMark = {
+                        lineIndex: marksWithCountdowns.length,
+                        time: instrumentalTime,
+                        lyric: '♪ Instrumental ♪',
+                        isCountdown: false
+                    };
+
+                    marksWithCountdowns.push(instrumentalMark);
+                    console.log(`   Auto-inserted Instrumental at ${instrumentalTime.toFixed(2)}s (gap was ${gap.toFixed(2)}s)`);
+
+                    // Recalculate gap from new instrumental mark to current mark
+                    // The gap is now: (Instrumental -> Current)
+                    gap = currentMark.time - instrumentalTime;
+                }
+
+                // Check for countdown insertion (now checks against new gap if instrumental was inserted)
                 if (gap > COUNTDOWN_THRESHOLD) {
                     // Insert countdown slides
                     const countdownStart = currentMark.time - 4; // 4 seconds before next lyric

@@ -119,6 +119,43 @@ export class LyricSyncProcessor {
                 this.config.vocalFile
             );
             console.log(`   Aligned ${timedLyrics.length} lyric segments\n`);
+
+            // Save initial alignment (unexpanded)
+            await this.exportTimestamps(timedLyrics);
+        }
+
+        // STEP 2a: MANUAL TIMING APPLICATION
+        // Must apply manual timing BEFORE splitting instrumental into segments
+        // because manual timing script relies on original line indices.
+        const manualTimingScript = path.join(path.dirname(this.config.outputDir), 'set-manual-timing.js');
+        if (fs.existsSync(manualTimingScript)) {
+            console.log('\n🔄 Applying manual timing adjustment...');
+
+            // Ensure we are working with unexpanded file
+            // Write current state to timestamps.json so script can read it
+            await this.exportTimestamps(timedLyrics);
+
+            const { execSync } = require('child_process');
+            try {
+                // Run the script
+                execSync(`node "${manualTimingScript}"`, {
+                    cwd: path.dirname(this.config.outputDir),
+                    stdio: 'inherit'
+                });
+
+                // Reload the updated timestamps (still unexpanded)
+                const updatedData = JSON.parse(fs.readFileSync(timestampsPath, 'utf-8'));
+                timedLyrics = updatedData.lyrics.map((lyric: any) => ({
+                    index: lyric.index,
+                    startTime: lyric.startTime,
+                    endTime: lyric.endTime,
+                    text: lyric.text
+                }));
+                console.log('   ✅ Manual timing applied successfully\n');
+            } catch (error: any) {
+                console.error('   ❌ Failed to apply manual timing:', error.message);
+                throw new Error(`Manual timing script failed. Fix the script or delete it to proceed. Error: ${error.message}`);
+            }
         }
 
         // PASS 1: Virtual pass - calculate splits without generating anything
@@ -131,30 +168,25 @@ export class LyricSyncProcessor {
         await this.generateImages(expandedLyrics);
         console.log(`   Generated ${expandedLyrics.length} images\n`);
 
-        console.log('🔄 Step 4: Exporting timestamp data...');
-        await this.exportTimestamps(expandedLyrics);
-        console.log('   Timestamp data exported');
+        // Export Render Manifest (Expanded) for video creation
+        console.log('🔄 Step 4: Exporting render manifest...');
+        const renderManifestPath = path.join(this.config.outputDir, 'timestamps-render.json');
+        await this.exporter.export(expandedLyrics, renderManifestPath, 'json');
+        console.log('   Render manifest exported to timestamps-render.json');
 
-        // Auto-apply manual timing if set-manual-timing.js exists
-        const manualTimingScript = path.join(path.dirname(this.config.outputDir), 'set-manual-timing.js');
-        if (fs.existsSync(manualTimingScript)) {
-            console.log('\n🔄 Step 4b: Applying manual timing adjustments...');
-            try {
-                const { execSync } = require('child_process');
-                execSync(`node "${manualTimingScript}"`, {
-                    cwd: path.dirname(this.config.outputDir),
-                    stdio: 'inherit'
-                });
-                console.log('   Manual timing applied successfully');
-            } catch (error: any) {
-                console.error('   ⚠️  Failed to apply manual timing:', error.message);
-            }
-        }
+        // Also save unexpanded timestamps to timestamps.json to preserve manual timing structure
+        await this.exportTimestamps(timedLyrics);
+        console.log('   Source timestamps saved to timestamps.json');
 
+        // Generate video if requested
         if (this.config.generateVideo) {
-            console.log('\n🔄 Step 5: Generating video...');
-            await this.generateVideo(expandedLyrics);
-            console.log('   Video generated successfully!');
+            console.log('🔄 Step 5: Creating video...');
+            await this.videoGenerator.generate(
+                expandedLyrics, // Use expanded lyrics for video generation
+                path.join(this.config.outputDir, 'images'),
+                this.config.audioFile,
+                path.join(this.config.outputDir, 'karaoke.mp4')
+            );
         }
     }
 

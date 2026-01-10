@@ -69,9 +69,14 @@ async function main() {
         process.exit(1);
     }
 
-    const timestampsFile = path.join(outputDir, 'timestamps.json');
+    // Check for timestamps-render.json first (split/expanded version), otherwise fall back to timestamps.json
+    let timestampsFile = path.join(outputDir, 'timestamps-render.json');
     if (!fs.existsSync(timestampsFile)) {
-        console.error(`❌ timestamps.json not found in: ${outputDir}`);
+        timestampsFile = path.join(outputDir, 'timestamps.json');
+    }
+
+    if (!fs.existsSync(timestampsFile)) {
+        console.error(`❌ timestamps.json (or timestamps-render.json) not found in: ${outputDir}`);
         console.error('   Run the main tool first to generate timestamps and images.');
         process.exit(1);
     }

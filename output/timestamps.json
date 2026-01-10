@@ -1,0 +1,362 @@
+{
+  "version": "1.0",
+  "metadata": {
+    "generatedAt": "2025-12-06T17:01:06.545Z",
+    "totalLines": 44,
+    "duration": 234.95999999999998
+  },
+  "lyrics": [
+    {
+      "index": 0,
+      "startTime": 0,
+      "endTime": 21.96,
+      "duration": 20,
+      "text": "♪ Instrumental ♪ | ♪ Instrumental ♪",
+      "imagePath": "images/lyric_000.png"
+    },
+    {
+      "index": 1,
+      "startTime": 21.96,
+      "endTime": 22.96,
+      "duration": 1,
+      "text": "[4] 3 2 1 | [4] 3 2 1",
+      "imagePath": "images/lyric_001.png"
+    },
+    {
+      "index": 2,
+      "startTime": 22.96,
+      "endTime": 23.96,
+      "duration": 1,
+      "text": "4 [3] 2 1 | 4 [3] 2 1",
+      "imagePath": "images/lyric_002.png"
+    },
+    {
+      "index": 3,
+      "startTime": 23.96,
+      "endTime": 24.96,
+      "duration": 1,
+      "text": "4 3 [2] 1 | 4 3 [2] 1",
+      "imagePath": "images/lyric_003.png"
+    },
+    {
+      "index": 4,
+      "startTime": 24.96,
+      "endTime": 25.96,
+      "duration": 1,
+      "text": "4 3 2 [1] | 4 3 2 [1]",
+      "imagePath": "images/lyric_004.png"
+    },
+    {
+      "index": 5,
+      "startTime": 25.96,
+      "endTime": 31.55,
+      "duration": 8,
+      "text": "मिल गई नज़रें, तो दिल भी | Mil gayi nazarein, to dil bhi",
+      "imagePath": "images/lyric_005.png"
+    },
+    {
+      "index": 6,
+      "startTime": 31.55,
+      "endTime": 37.03,
+      "duration": 5,
+      "text": "एक दिन, मिल जाएंगे | Ek din, mil jayenge",
+      "imagePath": "images/lyric_006.png"
+    },
+    {
+      "index": 7,
+      "startTime": 37.03,
+      "endTime": 41.99,
+      "duration": 6,
+      "text": "तू लहर है ,मैं लहर हूँ | Tu lahar hai, main lahar hoon",
+      "imagePath": "images/lyric_007.png"
+    },
+    {
+      "index": 8,
+      "startTime": 41.99,
+      "endTime": 47.41,
+      "duration": 5,
+      "text": "मिल के साहिल पाएंगे | Mil ke sahil payenge",
+      "imagePath": "images/lyric_008.png"
+    },
+    {
+      "index": 9,
+      "startTime": 47.41,
+      "endTime": 52.57,
+      "duration": 6,
+      "text": "मिल गई नज़रें, तो दिल भी | Mil gayi nazarein, to dil bhi",
+      "imagePath": "images/lyric_009.png"
+    },
+    {
+      "index": 10,
+      "startTime": 52.57,
+      "endTime": 58.08,
+      "duration": 5,
+      "text": "एक दिन, मिल जाएंगे | Ek din, mil jayenge",
+      "imagePath": "images/lyric_010.png"
+    },
+    {
+      "index": 11,
+      "startTime": 58.08,
+      "endTime": 63.27,
+      "duration": 5,
+      "text": "तू लहर है ,मैं लहर हूँ | Tu lahar hai, main lahar hoon",
+      "imagePath": "images/lyric_011.png"
+    },
+    {
+      "index": 12,
+      "startTime": 63.27,
+      "endTime": 67.55,
+      "duration": 5,
+      "text": "मिल के साहिल पाएंगे | Mil ke sahil payenge",
+      "imagePath": "images/lyric_012.png"
+    },
+    {
+      "index": 13,
+      "startTime": 67.55,
+      "endTime": 75.35,
+      "duration": 8,
+      "text": "♪ Instrumental ♪ | ♪ Instrumental ♪",
+      "imagePath": "images/lyric_013.png"
+    },
+    {
+      "index": 14,
+      "startTime": 75.35,
+      "endTime": 76.35,
+      "duration": 1,
+      "text": "[4] 3 2 1 | [4] 3 2 1",
+      "imagePath": "images/lyric_014.png"
+    },
+    {
+      "index": 15,
+      "startTime": 76.35,
+      "endTime": 77.35,
+      "duration": 1,
+      "text": "4 [3] 2 1 | 4 [3] 2 1",
+      "imagePath": "images/lyric_015.png"
+    },
+    {
+      "index": 16,
+      "startTime": 77.35,
+      "endTime": 78.35,
+      "duration": 1,
+      "text": "4 3 [2] 1 | 4 3 [2] 1",
+      "imagePath": "images/lyric_016.png"
+    },
+    {
+      "index": 17,
+      "startTime": 78.35,
+      "endTime": 79.35,
+      "duration": 1,
+      "text": "4 3 2 [1] | 4 3 2 [1]",
+      "imagePath": "images/lyric_017.png"
+    },
+    {
+      "index": 18,
+      "startTime": 79.35,
+      "endTime": 84.85,
+      "duration": 4,
+      "text": "हमसफ़र हैं हमकदम हैं | Hamsafar hain hamkadam hain",
+      "imagePath": "images/lyric_018.png"
+    },
+    {
+      "index": 19,
+      "startTime": 84.85,
+      "endTime": 90.69,
+      "duration": 5,
+      "text": "और सफ़र भी है नया | aur safar bhi hai naya",
+      "imagePath": "images/lyric_019.png"
+    },
+    {
+      "index": 20,
+      "startTime": 90.69,
+      "endTime": 95.06,
+      "duration": 4,
+      "text": "इब्तिदा है प्यार की | Ibtida hai pyaar ki",
+      "imagePath": "images/lyric_020.png"
+    },
+    {
+      "index": 21,
+      "startTime": 95.06,
+      "endTime": 100.75,
+      "duration": 5,
+      "text": "हमदम मेरे, हमनवाँ | hamdam mere, hamnawa",
+      "imagePath": "images/lyric_021.png"
+    },
+    {
+      "index": 22,
+      "startTime": 100.75,
+      "endTime": 106.05,
+      "duration": 5,
+      "text": "ऐसी घड़ियाँ ऐसे पल छिन | Aisi ghadiyan aise pal chhin",
+      "imagePath": "images/lyric_022.png"
+    },
+    {
+      "index": 23,
+      "startTime": 106.05,
+      "endTime": 111.05,
+      "duration": 5,
+      "text": "फिर कहाँ मिल पायेंगे | phir kahan mil payenge",
+      "imagePath": "images/lyric_023.png"
+    },
+    {
+      "index": 24,
+      "startTime": 111.05,
+      "endTime": 116.64,
+      "duration": 7,
+      "text": "मिल गई नज़रें, तो दिल भी | Mil gayi nazarein, to dil bhi",
+      "imagePath": "images/lyric_024.png"
+    },
+    {
+      "index": 25,
+      "startTime": 116.64,
+      "endTime": 122.06,
+      "duration": 7,
+      "text": "एक दिन, मिल जाएंगे | Ek din, mil jayenge",
+      "imagePath": "images/lyric_025.png"
+    },
+    {
+      "index": 26,
+      "startTime": 122.06,
+      "endTime": 127.47,
+      "duration": 5,
+      "text": "तू लहर है ,मैं लहर हूँ | Tu lahar hai, main lahar hoon",
+      "imagePath": "images/lyric_026.png"
+    },
+    {
+      "index": 27,
+      "startTime": 127.47,
+      "endTime": 131.82,
+      "duration": 6,
+      "text": "मिल के साहिल पायेंगे | Mil ke sahil payenge",
+      "imagePath": "images/lyric_027.png"
+    },
+    {
+      "index": 28,
+      "startTime": 131.82,
+      "endTime": 149.79,
+      "duration": 15,
+      "text": "♪ Instrumental ♪ | ♪ Instrumental ♪",
+      "imagePath": "images/lyric_028.png"
+    },
+    {
+      "index": 29,
+      "startTime": 149.79,
+      "endTime": 150.79,
+      "duration": 1,
+      "text": "[4] 3 2 1 | [4] 3 2 1",
+      "imagePath": "images/lyric_029.png"
+    },
+    {
+      "index": 30,
+      "startTime": 150.79,
+      "endTime": 151.79,
+      "duration": 1,
+      "text": "4 [3] 2 1 | 4 [3] 2 1",
+      "imagePath": "images/lyric_030.png"
+    },
+    {
+      "index": 31,
+      "startTime": 151.79,
+      "endTime": 152.79,
+      "duration": 1,
+      "text": "4 3 [2] 1 | 4 3 [2] 1",
+      "imagePath": "images/lyric_031.png"
+    },
+    {
+      "index": 32,
+      "startTime": 152.79,
+      "endTime": 153.79,
+      "duration": 1,
+      "text": "4 3 2 [1] | 4 3 2 [1]",
+      "imagePath": "images/lyric_032.png"
+    },
+    {
+      "index": 33,
+      "startTime": 153.79,
+      "endTime": 159.18,
+      "duration": 7,
+      "text": "महकी महकी चाँदनी है | Mahaki mahaki chandni hai",
+      "imagePath": "images/lyric_033.png"
+    },
+    {
+      "index": 34,
+      "startTime": 159.18,
+      "endTime": 165.01,
+      "duration": 5,
+      "text": "बहका बहका है समां | Behka behka hai sama",
+      "imagePath": "images/lyric_034.png"
+    },
+    {
+      "index": 35,
+      "startTime": 165.01,
+      "endTime": 170.22,
+      "duration": 5,
+      "text": "फूलों की बारात है और | Phoolon ki barat hai aur",
+      "imagePath": "images/lyric_035.png"
+    },
+    {
+      "index": 36,
+      "startTime": 170.22,
+      "endTime": 175.63,
+      "duration": 5,
+      "text": "तारों का है कारवाँ  | Taron ka hai karwan",
+      "imagePath": "images/lyric_036.png"
+    },
+    {
+      "index": 37,
+      "startTime": 175.63,
+      "endTime": 180.77,
+      "duration": 6,
+      "text": "गा रहा था ,एक दिल जो | Ga raha tha, ek dil jo",
+      "imagePath": "images/lyric_037.png"
+    },
+    {
+      "index": 38,
+      "startTime": 180.77,
+      "endTime": 185.93,
+      "duration": 5,
+      "text": "गीत दो दिल ,गाएंगे | Geet do dil, gayenge",
+      "imagePath": "images/lyric_038.png"
+    },
+    {
+      "index": 39,
+      "startTime": 185.93,
+      "endTime": 191.63,
+      "duration": 5,
+      "text": "मिल गई नज़रें, तो दिल भी | Mil gayi nazarein, to dil bhi",
+      "imagePath": "images/lyric_039.png"
+    },
+    {
+      "index": 40,
+      "startTime": 191.63,
+      "endTime": 196.8,
+      "duration": 5,
+      "text": "एक दिन, मिल जाएंगे | Ek din, mil jayenge",
+      "imagePath": "images/lyric_040.png"
+    },
+    {
+      "index": 41,
+      "startTime": 196.8,
+      "endTime": 202.07,
+      "duration": 5,
+      "text": "तू लहर है ,मैं लहर हूँ | Tu lahar hai, main lahar hoon",
+      "imagePath": "images/lyric_041.png"
+    },
+    {
+      "index": 42,
+      "startTime": 202.07,
+      "endTime": 206.21,
+      "duration": 10,
+      "text": "मिल के साहिल पाएंगे | Mil ke sahil payenge",
+      "imagePath": "images/lyric_042.png"
+    },
+    {
+      "index": 43,
+      "startTime": 206.21,
+      "endTime": 234.95999999999998,
+      "duration": 23.95999999999998,
+      "text": "Karaoke track by संतोष कुलकर्णी | Karaoke track by Santosh Kulkarni",
+      "imagePath": "images/lyric_043.png"
+    }
+  ]
+}

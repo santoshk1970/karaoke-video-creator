@@ -1,0 +1,107 @@
+{
+  "version": "1.0",
+  "metadata": {
+    "generatedAt": "2025-12-05T22:00:00.000Z",
+    "totalLines": 12,
+    "duration": 207.54,
+    "source": "Whisper automatic alignment"
+  },
+  "lyrics": [
+    {
+      "index": 2,
+      "startTime": 61.04,
+      "endTime": 70.0,
+      "duration": 8.96,
+      "text": "एक दिन, मिल जाएंगे",
+      "imagePath": "images/lyric_002.png"
+    },
+    {
+      "index": 4,
+      "startTime": 79.78,
+      "endTime": 90.64,
+      "duration": 10.86,
+      "text": "मिल के साहिल पाएंगे",
+      "imagePath": "images/lyric_004.png"
+    },
+    {
+      "index": 6,
+      "startTime": 90.64,
+      "endTime": 101.0,
+      "duration": 10.36,
+      "text": "एक दिन, मिल जाएंगे",
+      "imagePath": "images/lyric_006.png"
+    },
+    {
+      "index": 8,
+      "startTime": 101.0,
+      "endTime": 111.7,
+      "duration": 10.700000000000003,
+      "text": "मिल के साहिल पाएंगे",
+      "imagePath": "images/lyric_008.png"
+    },
+    {
+      "index": 10,
+      "startTime": 112.7,
+      "endTime": 121.7,
+      "duration": 9.0,
+      "text": "इब्तिदा है प्यार की, हमदम मेरे, हमनवाँ",
+      "imagePath": "images/lyric_010.png"
+    },
+    {
+      "index": 12,
+      "startTime": 122.24,
+      "endTime": 132.94,
+      "duration": 10.700000000000003,
+      "text": "मिल गई नज़रें, तो दिल भी",
+      "imagePath": "images/lyric_012.png"
+    },
+    {
+      "index": 15,
+      "startTime": 154.35999999999999,
+      "endTime": 155.76,
+      "duration": 1.4000000000000057,
+      "text": "मिल के साहिल पायेंगे",
+      "imagePath": "images/lyric_015.png"
+    },
+    {
+      "index": 17,
+      "startTime": 155.76,
+      "endTime": 163.5,
+      "duration": 7.740000000000009,
+      "text": "बहका बहका है समां",
+      "imagePath": "images/lyric_017.png"
+    },
+    {
+      "index": 19,
+      "startTime": 163.5,
+      "endTime": 178.96,
+      "duration": 15.460000000000008,
+      "text": "तारों का है कारवां",
+      "imagePath": "images/lyric_019.png"
+    },
+    {
+      "index": 21,
+      "startTime": 179.5,
+      "endTime": 186.62,
+      "duration": 7.1200000000000045,
+      "text": "गीत दो दिल ,गाएंगे",
+      "imagePath": "images/lyric_021.png"
+    },
+    {
+      "index": 23,
+      "startTime": 186.62,
+      "endTime": 196.9,
+      "duration": 10.280000000000001,
+      "text": "एक दिन, मिल जाएंगे",
+      "imagePath": "images/lyric_023.png"
+    },
+    {
+      "index": 25,
+      "startTime": 196.9,
+      "endTime": 207.54,
+      "duration": 10.639999999999986,
+      "text": "मिल के साहिल पाएंगे",
+      "imagePath": "images/lyric_025.png"
+    }
+  ]
+}
