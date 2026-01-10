@@ -332,16 +332,29 @@ const lyricStarts = [
 
         content += `];
 
-// Calculate end times (each lyric ends when the next one starts)
+// Rebuild lyrics array from marks (to include prelude, countdowns, etc.)
 const totalDuration = data.metadata.duration;
 
-for (let i = 0; i < lyricStarts.length && i < data.lyrics.length; i++) {
+// Create new lyrics array matching marks exactly
+const updatedLyrics = [];
+for (let i = 0; i < lyricStarts.length; i++) {
     const startTime = lyricStarts[i];
     const endTime = (i < lyricStarts.length - 1) ? lyricStarts[i + 1] : totalDuration;
     
-    data.lyrics[i].startTime = startTime;
-    data.lyrics[i].endTime = endTime;
+    // Get text from marks array (which includes prelude and countdowns)
+    const markText = marksWithCountdowns[i].lyric;
+    
+    updatedLyrics.push({
+        index: i,
+        startTime: startTime,
+        endTime: endTime,
+        text: markText,
+        imagePath: 'images/lyric_' + String(i).padStart(3, '0') + '.png'
+    });
 }
+
+// Replace lyrics array completely with new data
+data.lyrics = updatedLyrics;
 
 // Save updated timestamps
 fs.writeFileSync(timestampsPath, JSON.stringify(data, null, 2));

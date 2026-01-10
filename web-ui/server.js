@@ -503,14 +503,33 @@ app.post('/api/save-timing', async (req, res) => {
         });
 
         content += `];\n\n`;
-        content += `// Calculate end times\nconst totalDuration = data.metadata.duration;\n\n`;
-        content += `for (let i = 0; i < lyricStarts.length && i < data.lyrics.length; i++) {\n`;
-        content += `    const startTime = lyricStarts[i];\n`;
-        content += `    const endTime = (i < lyricStarts.length - 1) ? lyricStarts[i + 1] : totalDuration;\n`;
-        content += `    data.lyrics[i].startTime = startTime;\n`;
-        content += `    data.lyrics[i].endTime = endTime;\n`;
-        content += `}\n\n`;
-        content += `fs.writeFileSync(timestampsPath, JSON.stringify(data, null, 2));\n`;
+        content += `];
+
+// Rebuild lyrics array from marks (to include prelude, countdowns, etc.)
+const totalDuration = data.metadata.duration;
+
+// Create new lyrics array matching marks exactly
+const updatedLyrics = [];
+for (let i = 0; i < lyricStarts.length; i++) {
+    const startTime = lyricStarts[i];
+    const endTime = (i < lyricStarts.length - 1) ? lyricStarts[i + 1] : totalDuration;
+    
+    // Get text from marks array (which includes prelude and countdowns)
+    const markText = marksWithCountdowns[i].lyric;
+    
+    updatedLyrics.push({
+        index: i,
+        startTime: startTime,
+        endTime: endTime,
+        text: markText,
+        imagePath: 'images/lyric_' + String(i).padStart(3, '0') + '.png'
+    });
+}
+
+// Replace lyrics array completely with new data
+data.lyrics = updatedLyrics;
+
+    fs.writeFileSync(timestampsPath, JSON.stringify(data, null, 2));\n`;
         content += `console.log('✅ Manual timing applied to', data.lyrics.length, 'lyrics');\n`;
 
         const outputPath = path.join(projectPath, 'set-manual-timing.js');
