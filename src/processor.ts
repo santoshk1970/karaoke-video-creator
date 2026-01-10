@@ -96,9 +96,9 @@ export class LyricSyncProcessor {
             throw new Error(`Audio file not found: ${audioFile}`);
         }
 
-        const { execSync: execSyncCmd } = require('child_process');
+        const execSyncCmd = require('child_process').execSync;
         const command = `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${audioFile}"`;
-        const { stdout } = execSyncCmd(command);
+        const stdout = execSyncCmd(command, { encoding: 'utf-8' });
         const duration = parseFloat(stdout.trim());
 
         if (isNaN(duration) || duration <= 0) {
