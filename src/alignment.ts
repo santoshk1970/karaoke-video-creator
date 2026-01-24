@@ -108,7 +108,12 @@ export class AlignmentEngine {
         const tempOutputFile = path.join('/tmp', `alignment_${Date.now()}.json`);
 
         // Run aeneas
-        const command = `python3 -m aeneas.tools.execute_task "${audioFile}" "${tempLyricsFile}" "task_language=eng|is_text_type=plain|os_task_file_format=json" "${tempOutputFile}"`;
+        // Sanitize file paths to prevent command injection
+        const sanitizedAudioFile = audioFile.replace(/"/g, '\\"').replace(/`/g, '\\`').replace(/\$/g, '\\$');
+        const sanitizedLyricsFile = tempLyricsFile.replace(/"/g, '\\"').replace(/`/g, '\\`').replace(/\$/g, '\\$');
+        const sanitizedOutputFile = tempOutputFile.replace(/"/g, '\\"').replace(/`/g, '\\`').replace(/\$/g, '\\$');
+        
+        const command = `python3 -m aeneas.tools.execute_task "${sanitizedAudioFile}" "${sanitizedLyricsFile}" "task_language=eng|is_text_type=plain|os_task_file_format=json" "${sanitizedOutputFile}"`;
 
         try {
             await execAsync(command);
@@ -162,7 +167,9 @@ export class AlignmentEngine {
             throw new Error(`Audio file not found: ${audioFile}`);
         }
 
-        const command = `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${audioFile}"`;
+        // Sanitize file path to prevent command injection
+        const sanitizedAudioFile = audioFile.replace(/"/g, '\\"').replace(/`/g, '\\`').replace(/\$/g, '\\$');
+        const command = `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${sanitizedAudioFile}"`;
         const { stdout } = await execAsync(command);
         const duration = parseFloat(stdout.trim());
 

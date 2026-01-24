@@ -40,8 +40,12 @@ export async function alignWithWhisper(audioFile: string, lyrics: string[]): Pro
     console.log('   Running Whisper (this may take a few minutes)...');
     
     try {
+        // Sanitize file paths to prevent command injection
+        const sanitizedAudioFile = audioFile.replace(/"/g, '\\"').replace(/`/g, '\\`').replace(/\$/g, '\\$');
+        const sanitizedOutputDir = outputDir.replace(/"/g, '\\"').replace(/`/g, '\\`').replace(/\$/g, '\\$');
+        
         // Run whisper with JSON output and word timestamps
-        const command = `whisper "${audioFile}" --model base --language hi --output_format json --output_dir "${outputDir}" --word_timestamps True`;
+        const command = `whisper "${sanitizedAudioFile}" --model base --language hi --output_format json --output_dir "${sanitizedOutputDir}" --word_timestamps True`;
         await execAsync(command, { maxBuffer: 50 * 1024 * 1024 });
 
         // Read the JSON output

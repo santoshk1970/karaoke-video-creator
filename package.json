@@ -21,7 +21,7 @@
     "karaoke",
     "subtitles"
   ],
-  "author": "",
+  "author": "Santosh Kulkarni",
   "license": "MIT",
   "dependencies": {
     "@types/fluent-ffmpeg": "^2.1.28",
@@ -35,5 +35,8 @@
     "@vitest/coverage-v8": "^4.0.15",
     "@vitest/ui": "^4.0.15",
     "vitest": "^4.0.15"
+  },
+  "overrides": {
+    "diff": "^8.0.3"
   }
 }

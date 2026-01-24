@@ -1,3 +1,9 @@
+/**
+ * Lyric Sync - Core Processing Logic
+ * Copyright (c) 2026 Santosh Kulkarni
+ * MIT License - See LICENSE file for details
+ */
+
 import * as fs from 'fs';
 import * as path from 'path';
 import { AlignmentEngine } from './alignment';
@@ -96,9 +102,12 @@ export class LyricSyncProcessor {
             throw new Error(`Audio file not found: ${audioFile}`);
         }
 
-        const execSyncCmd = require('child_process').execSync;
-        const command = `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${audioFile}"`;
-        const stdout = execSyncCmd(command, { encoding: 'utf-8' });
+        // Validate and sanitize the audio file path to prevent command injection
+        const sanitizedAudioFile = audioFile.replace(/"/g, '\\"').replace(/`/g, '\\`').replace(/\$/g, '\\$');
+        
+        const { execSync } = require('child_process');
+        const command = `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${sanitizedAudioFile}"`;
+        const stdout = execSync(command, { encoding: 'utf-8' });
         const duration = parseFloat(stdout.trim());
 
         if (isNaN(duration) || duration <= 0) {
@@ -139,7 +148,10 @@ export class LyricSyncProcessor {
             console.log('   Running manual timing script...');
             const { execSync } = require('child_process');
             try {
-                execSync(`node "${manualTimingScript}"`, {
+                // Validate and sanitize the script path to prevent command injection
+                const sanitizedScript = manualTimingScript.replace(/"/g, '\\"').replace(/`/g, '\\`').replace(/\$/g, '\\$');
+                
+                execSync(`node "${sanitizedScript}"`, {
                     cwd: path.dirname(this.config.outputDir),
                     stdio: 'inherit'
                 });

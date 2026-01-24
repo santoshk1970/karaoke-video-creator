@@ -1,5 +1,11 @@
 #!/usr/bin/env node
 
+/**
+ * Lyric Sync - Audio to Timed Lyric Images
+ * Copyright (c) 2026 Santosh Kulkarni
+ * MIT License - See LICENSE file for details
+ */
+
 import { LyricSyncProcessor } from './processor';
 import * as path from 'path';
 import * as fs from 'fs';
