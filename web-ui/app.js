@@ -34,6 +34,9 @@ async function reloadLyrics() {
                 updateStatus(3, 'pending');
                 updateStatus(4, 'pending');
                 updateStatus(5, 'pending');
+                // Disable play buttons since videos are now outdated
+                disableButton('btn-play-karaoke');
+                disableButton('btn-play-singalong');
             } else {
                 log(`Error: ${result.error}`, 'error');
             }
@@ -114,13 +117,11 @@ async function loadProject(name) {
                 enableButton('btn-video');
             }
 
-            if (result.hasVideo) {
-                updateStatus(4, 'success');
-                enableButton('btn-play');
-            }
-
             // Check audio files status
             checkAudioFilesStatus();
+
+            // Check video status and enable play buttons if videos exist
+            checkVideoStatus();
 
             log(`✓ Project status loaded`, 'info');
         }
@@ -315,6 +316,9 @@ async function checkTimingComplete() {
             updateStatus(2, 'success');
             enableButton('btn-generate-all');
             disableButton('btn-kill-audio');
+            // Disable play buttons since videos are now outdated due to new timing
+            disableButton('btn-play-karaoke');
+            disableButton('btn-play-singalong');
         } else {
             log('⚠️ Timing window closed but no data saved', 'warning');
             updateStatus(2, 'pending');
@@ -410,6 +414,10 @@ async function generateImagesAndVideo() {
             body: JSON.stringify({ projectPath })
         });
 
+        // Track if image generation succeeded
+        let imageGenSuccess = true;
+        let lastImageOutput = '';
+
         // Stream the image generation output
         const imgReader = imgResponse.body.getReader();
         const decoder = new TextDecoder();
@@ -422,16 +430,26 @@ async function generateImagesAndVideo() {
             const lines = text.split('\n').filter(l => l.trim());
 
             lines.forEach(line => {
+                lastImageOutput = line;
                 if (line.includes('Progress:')) {
                     log(line, 'info');
                 } else if (line.includes('✓') || line.includes('✅')) {
                     log(line, 'success');
                 } else if (line.includes('Error') || line.includes('❌')) {
+                    imageGenSuccess = false;
                     log(line, 'error');
                 } else {
                     log(line, 'info');
                 }
             });
+        }
+
+        // Check if image generation succeeded
+        if (!imageGenSuccess || !lastImageOutput.includes('✅')) {
+            log('❌ Image generation failed! Video generation aborted.', 'error');
+            updateStatus(2, 'error');
+            enableButton('btn-generate-all');
+            return;
         }
 
         log('✓ Images generated successfully!', 'success');
@@ -452,6 +470,10 @@ async function generateImagesAndVideo() {
             })
         });
 
+        // Track if sing-along video generation succeeded
+        let singalongSuccess = true;
+        let lastSingalongOutput = '';
+
         // Stream the sing-along video generation output
         let vidReader = singalongResponse.body.getReader();
 
@@ -463,11 +485,13 @@ async function generateImagesAndVideo() {
             const lines = text.split('\n').filter(l => l.trim());
 
             lines.forEach(line => {
+                lastSingalongOutput = line;
                 if (line.includes('Backup')) {
                     log(line, 'info');
                 } else if (line.includes('✓') || line.includes('✅')) {
                     log(line, 'success');
                 } else if (line.includes('Error') || line.includes('❌')) {
+                    singalongSuccess = false;
                     log(line, 'error');
                 } else if (line.includes('Encoding')) {
                     log(line, 'info');
@@ -475,6 +499,14 @@ async function generateImagesAndVideo() {
                     log(line, 'info');
                 }
             });
+        }
+
+        // Check if sing-along video generation succeeded
+        if (!singalongSuccess || !lastSingalongOutput.includes('✅')) {
+            log('❌ Sing-along video generation failed!', 'error');
+            updateStatus(2, 'error');
+            enableButton('btn-generate-all');
+            return;
         }
 
         log('✅ Sing-along video generated!', 'success');
@@ -493,6 +525,10 @@ async function generateImagesAndVideo() {
                 })
             });
 
+            // Track if karaoke video generation succeeded
+            let karaokeSuccess = true;
+            let lastKaraokeOutput = '';
+
             // Stream the karaoke video generation output
             vidReader = karaokeResponse.body.getReader();
 
@@ -504,11 +540,13 @@ async function generateImagesAndVideo() {
                 const lines = text.split('\n').filter(l => l.trim());
 
                 lines.forEach(line => {
+                    lastKaraokeOutput = line;
                     if (line.includes('Backup')) {
                         log(line, 'info');
                     } else if (line.includes('✓') || line.includes('✅')) {
                         log(line, 'success');
                     } else if (line.includes('Error') || line.includes('❌')) {
+                        karaokeSuccess = false;
                         log(line, 'error');
                     } else if (line.includes('Encoding')) {
                         log(line, 'info');
@@ -518,8 +556,13 @@ async function generateImagesAndVideo() {
                 });
             }
 
-            log('✅ Karaoke video generated!', 'success');
-            enableButton('btn-play-karaoke');
+            // Check if karaoke video generation succeeded
+            if (!karaokeSuccess || !lastKaraokeOutput.includes('✅')) {
+                log('❌ Karaoke video generation failed!', 'error');
+            } else {
+                log('✅ Karaoke video generated!', 'success');
+                enableButton('btn-play-karaoke');
+            }
         }
 
         log('✅ All done! Images and videos generated successfully!', 'success');
@@ -696,23 +739,6 @@ async function checkAudioFilesStatus() {
                 novocalStatus.textContent = result.hasNoVocal ? '✅' : '⚪';
             }
 
-            // Check if images exist to enable video buttons (step 2)
-            const imagesExist = document.getElementById('status-2').textContent === '✅';
-
-            // Enable Sing-along video button if original audio exists and images exist
-            if (result.hasOriginal && imagesExist) {
-                enableButton('btn-video-singalong');
-            } else {
-                disableButton('btn-video-singalong');
-            }
-
-            // Enable Karaoke video button if no-vocal audio exists and images exist
-            if (result.hasNoVocal && imagesExist) {
-                enableButton('btn-video-karaoke');
-            } else {
-                disableButton('btn-video-karaoke');
-            }
-
             // Check video status
             checkVideoStatus();
         }
@@ -727,16 +753,18 @@ async function checkVideoStatus() {
         const result = await response.json();
 
         if (result.success) {
-            // Update Karaoke video status
+            // Enable/disable Karaoke play button based on video existence
             if (result.hasKaraoke) {
-                document.getElementById('status-karaoke').textContent = '✅';
                 enableButton('btn-play-karaoke');
+            } else {
+                disableButton('btn-play-karaoke');
             }
 
-            // Update Sing-along video status
+            // Enable/disable Sing-along play button based on video existence
             if (result.hasSingalong) {
-                document.getElementById('status-singalong').textContent = '✅';
                 enableButton('btn-play-singalong');
+            } else {
+                disableButton('btn-play-singalong');
             }
         }
     } catch (error) {
@@ -751,9 +779,11 @@ async function separateVocals() {
         const checkResult = await checkResponse.json();
 
         if (checkResult.success && checkResult.hasNoVocal) {
-            if (!confirm('Instrumental audio already exists. Do you want to regenerate it? This will overwrite the existing file.')) {
+            if (!confirm('Instrumental audio already exists. Regenerating will invalidate any existing karaoke video. Continue?')) {
                 return;
             }
+            // Disable karaoke play button since video will be outdated
+            disableButton('btn-play-karaoke');
         }
 
         log('🎵 Starting vocal separation (this may take 1-2 minutes)...', 'info');
@@ -824,6 +854,16 @@ function uploadNoVocalAudio() {
         if (!file) return;
 
         try {
+            // Check if karaoke video already exists
+            const videoCheck = await fetch(`/api/check-video-status?project=${encodeURIComponent(projectName)}`);
+            const videoResult = await videoCheck.json();
+
+            if (videoResult.success && videoResult.hasKaraoke) {
+                if (!confirm('Karaoke video already exists. Uploading new instrumental audio will invalidate it. Continue?')) {
+                    return;
+                }
+            }
+
             log('📤 Uploading instrumental audio...', 'info');
 
             const formData = new FormData();
@@ -839,6 +879,8 @@ function uploadNoVocalAudio() {
 
             if (result.success) {
                 log('✅ Instrumental audio uploaded successfully', 'success');
+                // Disable karaoke play button since video is now outdated
+                disableButton('btn-play-karaoke');
                 checkAudioFilesStatus();
             } else {
                 throw new Error(result.error);

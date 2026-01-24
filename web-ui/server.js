@@ -503,25 +503,29 @@ app.post('/api/save-timing', async (req, res) => {
         });
 
         content += `];\n\n`;
-        content += `];
 
-// Rebuild lyrics array from marks (to include prelude, countdowns, etc.)
-const totalDuration = data.metadata.duration;
+        // Add lyric texts array
+        content += `// Lyric texts (matching lyricStarts array)\nconst lyricTexts = [\n`;
+        marksWithCountdowns.forEach((mark, i) => {
+            const escapedText = mark.lyric.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n');
+            content += `    '${escapedText}',\n`;
+        });
+        content += `];\n\n`;
+
+        content += `// Rebuild lyrics array from marks (to include prelude, countdowns, etc.)
+const totalDuration = data.metadata?.duration || 600; // Default to 10 min if missing
 
 // Create new lyrics array matching marks exactly
 const updatedLyrics = [];
 for (let i = 0; i < lyricStarts.length; i++) {
     const startTime = lyricStarts[i];
     const endTime = (i < lyricStarts.length - 1) ? lyricStarts[i + 1] : totalDuration;
-    
-    // Get text from marks array (which includes prelude and countdowns)
-    const markText = marksWithCountdowns[i].lyric;
-    
+
     updatedLyrics.push({
         index: i,
         startTime: startTime,
         endTime: endTime,
-        text: markText,
+        text: lyricTexts[i],
         imagePath: 'images/lyric_' + String(i).padStart(3, '0') + '.png'
     });
 }
@@ -896,7 +900,7 @@ app.post('/api/delete-images', async (req, res) => {
     }
 });
 
-const PORT = 8080;
+const PORT = 3000;
 app.listen(PORT, () => {
     console.log(`🎵 Karaoke Video Creator UI running at http://localhost:${PORT}`);
     console.log(`📁 Projects directory: ${PROJECTS_DIR}`);

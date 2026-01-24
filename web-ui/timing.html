@@ -130,7 +130,7 @@
                 <div class="flex items-center justify-between">
                         <div class="text-xs text-gray-500">
                             <i class="fas fa-info-circle mr-1"></i>
-                            Display when marked (0s offset)
+                            Display 1s before marked
                         </div>
                     <button onclick="stopAudio()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">
                         <i class="fas fa-stop-circle mr-1"></i>Stop
@@ -162,9 +162,9 @@
         let timerInterval = null;
         let projectPath = '';
         let audioElement = null;
-        
+
         // Configuration
-        const REACTION_TIME_ADJUSTMENT = 0.0; // seconds to subtract from spacebar press (0 = display when marked)
+        const REACTION_TIME_ADJUSTMENT = 1.0; // seconds to subtract from spacebar press (1 = display 1s before marked)
 
         // Get project path from URL
         const urlParams = new URLSearchParams(window.location.search);
@@ -172,7 +172,7 @@
 
         if (!projectPath) {
             alert('No project specified!');
-            window.location.href = '/';
+            window.location.href = '/projects.html';
         }
 
         // Load project data
@@ -201,7 +201,7 @@
                 startCountdown();
             } catch (error) {
                 alert('Error loading project: ' + error.message);
-                window.location.href = '/';
+                window.location.href = `/index.html?project=${encodeURIComponent(projectPath)}`;
             }
         }
 
@@ -348,7 +348,7 @@
         async function finish() {
             if (marks.length === 0) {
                 alert('No marks recorded!');
-                window.location.href = '/';
+                window.location.href = `/index.html?project=${encodeURIComponent(projectPath)}`;
                 return;
             }
 
@@ -370,7 +370,7 @@
 
                 if (result.success) {
                     alert(`✅ Timing saved!\n\nMarked: ${marks.length} lines\nCountdowns: ${result.countdownsCount}\nTotal: ${result.totalLines} segments`);
-                    window.location.href = '/';
+                    window.location.href = `/index.html?project=${encodeURIComponent(projectPath)}`;
                 } else {
                     throw new Error(result.error);
                 }
