@@ -10,9 +10,8 @@ export class AlignmentEngine {
     /**
      * Align lyrics to audio using multiple strategies
      * 
-     * Strategy 1: Use Python's aeneas if available
-     * Strategy 2: Use ffmpeg to detect silence and estimate timing
-     * Strategy 3: Simple time-based distribution as fallback
+     * Strategy 1: Use ffmpeg to detect silence and estimate timing
+     * Strategy 2: Simple time-based distribution as fallback
      */
     async align(
         audioFile: string,
@@ -23,14 +22,6 @@ export class AlignmentEngine {
         this.validateInputs(audioFile, lyrics, vocalFile);
 
         console.log('   Checking for alignment tools...');
-
-        // Try to use aeneas (Python library) if installed
-        try {
-            return await this.alignWithAeneas(audioFile, lyrics);
-        } catch (error: any) {
-            console.log('   ⚠️  Aeneas not available, trying alternative methods...');
-            console.log(`      Reason: ${error.message}`);
-        }
 
         // Try to use ffmpeg for audio analysis
         try {
@@ -81,61 +72,6 @@ export class AlignmentEngine {
             if (!validExts.includes(vocalExt)) {
                 throw new Error(`Unsupported vocal file format: ${vocalExt}`);
             }
-        }
-    }
-
-    /**
-     * Use Python's aeneas for forced alignment
-     */
-    private async alignWithAeneas(
-        audioFile: string,
-        lyrics: string[]
-    ): Promise<TimedLyric[]> {
-        // Check if aeneas is installed
-        try {
-            await execAsync('python3 -c "import aeneas"');
-        } catch {
-            throw new Error('Aeneas not installed');
-        }
-
-        console.log('   Using Aeneas for forced alignment...');
-
-        // Create temporary lyrics file
-        const tempLyricsFile = path.join('/tmp', `lyrics_${Date.now()}.txt`);
-        fs.writeFileSync(tempLyricsFile, lyrics.join('\n'));
-
-        // Create temporary output file
-        const tempOutputFile = path.join('/tmp', `alignment_${Date.now()}.json`);
-
-        // Run aeneas
-        // Sanitize file paths to prevent command injection
-        const sanitizedAudioFile = audioFile.replace(/"/g, '\\"').replace(/`/g, '\\`').replace(/\$/g, '\\$');
-        const sanitizedLyricsFile = tempLyricsFile.replace(/"/g, '\\"').replace(/`/g, '\\`').replace(/\$/g, '\\$');
-        const sanitizedOutputFile = tempOutputFile.replace(/"/g, '\\"').replace(/`/g, '\\`').replace(/\$/g, '\\$');
-        
-        const command = `python3 -m aeneas.tools.execute_task "${sanitizedAudioFile}" "${sanitizedLyricsFile}" "task_language=eng|is_text_type=plain|os_task_file_format=json" "${sanitizedOutputFile}"`;
-
-        try {
-            await execAsync(command);
-
-            // Read and parse results
-            const result = JSON.parse(fs.readFileSync(tempOutputFile, 'utf-8'));
-
-            // Clean up temp files
-            fs.unlinkSync(tempLyricsFile);
-            fs.unlinkSync(tempOutputFile);
-
-            return result.fragments.map((fragment: any, index: number) => ({
-                index,
-                startTime: parseFloat(fragment.begin),
-                endTime: parseFloat(fragment.end),
-                text: fragment.lines[0]
-            }));
-        } catch (error) {
-            // Clean up temp files
-            if (fs.existsSync(tempLyricsFile)) fs.unlinkSync(tempLyricsFile);
-            if (fs.existsSync(tempOutputFile)) fs.unlinkSync(tempOutputFile);
-            throw error;
         }
     }
 
