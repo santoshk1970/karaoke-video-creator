@@ -1,0 +1,228 @@
+/**
+ * Lyric Sync - Processor Tests
+ * Copyright (c) 2026 Santosh Kulkarni
+ * MIT License - See LICENSE file for details
+ */
+
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { LyricSyncProcessor, ProcessorConfig, TimedLyric } from '../processor';
+import * as fs from 'fs';
+import * as path from 'path';
+import { execSync } from 'child_process';
+
+// Mock modules
+vi.mock('fs');
+vi.mock('child_process');
+
+describe('LyricSyncProcessor', () => {
+    let processor: LyricSyncProcessor;
+    let testConfig: ProcessorConfig;
+    const testOutputDir = './test-output';
+
+    beforeEach(() => {
+        // Reset mocks before each test
+        vi.clearAllMocks();
+
+        // Default mock implementations
+        (fs.existsSync as vi.Mock).mockReturnValue(true);
+        (fs.readFileSync as vi.Mock).mockReturnValue('First line\nSecond line\nThird line');
+
+        const testAudioPath = path.join(testOutputDir, 'test.mp3');
+        const testLyricsPath = path.join(testOutputDir, 'test.txt');
+
+        testConfig = {
+            audioFile: testAudioPath,
+            lyricsFile: testLyricsPath,
+            outputDir: testOutputDir,
+            format: 'json',
+        };
+
+        processor = new LyricSyncProcessor(testConfig);
+    });
+
+    describe('Configuration Validation', () => {
+        it('should validate configuration with valid inputs', () => {
+            expect(() => new LyricSyncProcessor(testConfig)).not.toThrow();
+        });
+
+        it('should throw error for missing audio file', () => {
+            (fs.existsSync as vi.Mock).mockReturnValueOnce(false);
+            const invalidConfig = { ...testConfig, audioFile: 'nonexistent.mp3' };
+            expect(() => new LyricSyncProcessor(invalidConfig)).toThrow('Audio file not found');
+        });
+
+        it('should throw error for missing lyrics file', () => {
+            (fs.existsSync as vi.Mock).mockImplementation((p: string) => !p.endsWith('.txt'));
+            const invalidConfig = { ...testConfig, lyricsFile: 'nonexistent.txt' };
+            expect(() => new LyricSyncProcessor(invalidConfig)).toThrow('Lyrics file not found');
+        });
+
+        it('should throw error for unsupported audio format', () => {
+            const invalidConfig = { ...testConfig, audioFile: 'test.xyz' };
+            expect(() => new LyricSyncProcessor(invalidConfig)).toThrow('Unsupported audio format');
+        });
+
+        it('should throw error for non-txt lyrics file', () => {
+            const invalidConfig = { ...testConfig, lyricsFile: 'test.doc' };
+            expect(() => new LyricSyncProcessor(invalidConfig)).toThrow('Lyrics file must be .txt format');
+        });
+
+        it('should throw error for invalid output format', () => {
+            const invalidConfig = { ...testConfig, format: 'xyz' as any };
+            expect(() => new LyricSyncProcessor(invalidConfig)).toThrow('Invalid format: xyz');
+        });
+
+        it('should accept optional vocal file when it exists', () => {
+            (fs.existsSync as vi.Mock).mockReturnValue(true);
+            const configWithVocal = { ...testConfig, vocalFile: 'vocal.mp3' };
+            expect(() => new LyricSyncProcessor(configWithVocal)).not.toThrow();
+        });
+
+        it('should throw error for missing optional vocal file', () => {
+            (fs.existsSync as vi.Mock).mockImplementation((p: string) => !p.includes('nonexistent-vocal'));
+            const invalidConfig = { ...testConfig, vocalFile: 'nonexistent-vocal.mp3' };
+            expect(() => new LyricSyncProcessor(invalidConfig)).toThrow('Vocal file not found');
+        });
+
+        it('should throw error for missing outputDir', () => {
+            const invalidConfig = { ...testConfig, outputDir: undefined as any };
+            expect(() => new LyricSyncProcessor(invalidConfig)).toThrow('Output directory is required');
+        });
+
+        it('should throw error for missing audioFile property', () => {
+            const invalidConfig = { ...testConfig, audioFile: undefined as any };
+            expect(() => new LyricSyncProcessor(invalidConfig)).toThrow('Audio file path is required');
+        });
+
+        it('should throw error for missing lyricsFile property', () => {
+            const invalidConfig = { ...testConfig, lyricsFile: undefined as any };
+            expect(() => new LyricSyncProcessor(invalidConfig)).toThrow('Lyrics file path is required');
+        });
+
+        it('should throw error for missing optional instrumental file', () => {
+            (fs.existsSync as vi.Mock).mockImplementation((p: string) => !p.includes('nonexistent-instrumental'));
+            const invalidConfig = { ...testConfig, instrumentalFile: 'nonexistent-instrumental.mp3' };
+            expect(() => new LyricSyncProcessor(invalidConfig)).toThrow('Instrumental file not found');
+        });
+    });
+
+    describe('Lyrics Reading', () => {
+        it('should read lyrics correctly', () => {
+            const lyrics = processor['readLyrics']();
+            expect(lyrics).toEqual(['First line', 'Second line', 'Third line']);
+        });
+
+        it('should handle empty lines in lyrics', () => {
+            (fs.readFileSync as vi.Mock).mockReturnValue('First line\n\nSecond line\n   \nThird line');
+            const lyrics = processor['readLyrics']();
+            expect(lyrics).toEqual(['First line', 'Second line', 'Third line']);
+        });
+
+        it('should throw error for empty lyrics file', () => {
+            (fs.readFileSync as vi.Mock).mockReturnValue('');
+            expect(() => processor['readLyrics']()).toThrow('Lyrics file is empty');
+        });
+    });
+
+    describe('Image Generation Planning', () => {
+        it('should plan image generation without splitting', () => {
+            const timedLyrics: TimedLyric[] = [
+                { index: 0, startTime: 0, endTime: 3, text: 'First line' },
+                { index: 1, startTime: 3, endTime: 6, text: 'Second line' },
+            ];
+            const planned = processor['planImageGeneration'](timedLyrics);
+            expect(planned).toHaveLength(2);
+        });
+
+        it('should split instrumental segments longer than threshold', () => {
+            const timedLyrics: TimedLyric[] = [
+                { index: 0, startTime: 0, endTime: 3, text: 'First line' },
+                { index: 1, startTime: 3, endTime: 15, text: '♪ Instrumental ♪' },
+                { index: 2, startTime: 15, endTime: 18, text: 'Second line' },
+            ];
+            const planned = processor['planImageGeneration'](timedLyrics);
+            expect(planned.length).toBeGreaterThan(3);
+            const instrumentalSegments = planned.filter(p => p.text.includes('Instrumental'));
+            instrumentalSegments.forEach((segment, index) => {
+                expect(segment.segmentIndex).toBe(index);
+            });
+        });
+
+        it('should not split short instrumental segments', () => {
+            const timedLyrics: TimedLyric[] = [
+                { index: 0, startTime: 0, endTime: 3, text: 'First line' },
+                { index: 1, startTime: 3, endTime: 8, text: '♪ Instrumental ♪' },
+                { index: 2, startTime: 8, endTime: 11, text: 'Second line' },
+            ];
+            const planned = processor['planImageGeneration'](timedLyrics);
+            expect(planned).toHaveLength(3);
+        });
+    });
+
+    describe('Audio Duration', () => {
+        it('should throw error for non-existent audio file', async () => {
+            (fs.existsSync as vi.Mock).mockReturnValue(false);
+            await expect(processor['getAudioDuration']('nonexistent.mp3')).rejects.toThrow('Audio file not found');
+        });
+
+        it('should handle audio duration extraction errors', async () => {
+            (fs.existsSync as vi.Mock).mockReturnValue(true);
+            (execSync as any).mockReturnValue('not a number');
+            await expect(processor['getAudioDuration']('any.mp3')).rejects.toThrow('Invalid audio duration');
+        });
+    });
+
+    describe('Edge Cases', () => {
+        it('should handle single lyric line', () => {
+            (fs.readFileSync as vi.Mock).mockReturnValue('Single line');
+            const lyrics = processor['readLyrics']();
+            expect(lyrics).toEqual(['Single line']);
+        });
+    });
+
+    describe('Main Process Logic', () => {
+        beforeEach(() => {
+            vi.spyOn(processor['alignmentEngine'], 'align').mockResolvedValue([]);
+            vi.spyOn(processor['imageGenerator'], 'generate').mockResolvedValue(undefined);
+            vi.spyOn(processor['exporter'], 'export').mockResolvedValue(undefined);
+            vi.spyOn(processor as any, 'getAudioDuration').mockResolvedValue(120);
+        });
+
+        it('should use alignment engine when no manual timing exists', async () => {
+            (fs.existsSync as vi.Mock).mockReturnValue(false);
+            await processor.process();
+            expect(processor['alignmentEngine'].align).toHaveBeenCalled();
+            expect(processor['imageGenerator'].generate).toHaveBeenCalled();
+            expect(fs.writeFileSync).toHaveBeenCalled();
+        });
+
+        it('should use existing timestamps.json if found', async () => {
+            const timestampsPath = path.join(testConfig.outputDir, 'timestamps.json');
+            (fs.existsSync as vi.Mock).mockImplementation((p: any) => p === timestampsPath || p === testConfig.audioFile || p === testConfig.lyricsFile);
+
+            const mockTimestamps = { lyrics: [{ index: 0, startTime: 1, endTime: 3, text: 'Manual' }] };
+            (fs.readFileSync as vi.Mock).mockImplementation((p: any) => {
+                if (p === timestampsPath) return JSON.stringify(mockTimestamps);
+                return 'default lyrics';
+            });
+
+            await processor.process();
+            expect(processor['alignmentEngine'].align).not.toHaveBeenCalled();
+            expect(processor['imageGenerator'].generate).toHaveBeenCalled();
+        });
+
+        it('should use manual timing script if it exists', async () => {
+            const manualScriptPath = path.join(path.dirname(testConfig.outputDir), 'set-manual-timing.js');
+            (fs.existsSync as vi.Mock).mockImplementation((p: any) => p === manualScriptPath || p === testConfig.audioFile || p === testConfig.lyricsFile);
+
+            const mockUpdatedTimestamps = { lyrics: [{ index: 0, startTime: 10, endTime: 20, text: 'From script' }] };
+            (fs.readFileSync as vi.Mock).mockReturnValue(JSON.stringify(mockUpdatedTimestamps));
+            (execSync as any).mockImplementation(() => {});
+
+            await processor.process();
+            expect(execSync).toHaveBeenCalledWith(`node "${manualScriptPath}"`, expect.any(Object));
+            expect(processor['alignmentEngine'].align).not.toHaveBeenCalled();
+            expect(processor['imageGenerator'].generate).toHaveBeenCalled();
+        });
+    });
+});
