@@ -23,9 +23,6 @@ graph LR
         C1[001.png]
         C2[002.png]
         C3[timestamps.json]
-        C4[lyrics.lrc]
-        C5[lyrics.srt]
-        C6[lyrics.json]
     end
 ```
 
@@ -61,8 +58,6 @@ graph TB
             
             subgraph Export[Export Engine]
                 E1[JSON]
-                E2[LRC]
-                E3[SRT]
             end
             
             subgraph Security[Security Layer]
@@ -96,12 +91,8 @@ flowchart TD
     Images --> Canvas[Canvas Rendering]
     Canvas --> Export[Export Formats]
     Export --> JSON[JSON Output]
-    Export --> LRC[LRC Output]
-    Export --> SRT[SRT Output]
     
     JSON --> End([End])
-    LRC --> End
-    SRT --> End
     
     Error1 --> End
 ```
