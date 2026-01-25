@@ -173,26 +173,3 @@ pie title Project Quality Metrics
     "Vulnerabilities" : 0
     "Security Score" : 100
 ```
-
-## Architecture Benefits
-
-```mermaid
-mindmap
-  root((Lyric Sync))
-    Modularity
-      Clear separation
-      Reusable components
-      Easy testing
-    Reliability
-      Multiple alignment strategies
-      Fallback mechanisms
-      Error handling
-    Security
-      Input sanitization
-      Command protection
-      Validation layers
-    Flexibility
-      Multiple export formats
-      CLI and Web UI
-      Deployment options
-```
