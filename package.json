@@ -9,6 +9,7 @@
     "dev": "ts-node src/index.ts",
     "video": "ts-node src/createVideo.ts",
     "timing": "ts-node src/timing-tool.ts",
+    "extract-voice": "ts-node src/voiceExtractionTool.ts",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
@@ -27,8 +28,11 @@
   "dependencies": {
     "@types/fluent-ffmpeg": "^2.1.28",
     "@types/node": "^24.10.1",
-    "canvas": "^3.2.0",
+    "canvas": "^3.2.1",
+    "express": "^5.2.1",
     "fluent-ffmpeg": "^2.1.3",
+    "multer": "^2.1.1",
+    "node-fetch": "^3.3.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   },

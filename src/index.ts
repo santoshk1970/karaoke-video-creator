@@ -25,8 +25,16 @@ async function main() {
         console.log('  --format <format>     Output format: json|lrc|srt (default: json)');
         console.log('  --video               Generate video file (MP4)');
         console.log('  --quality <quality>   Video quality: low|medium|high|ultra (default: high)');
+        console.log('  --extract-voice       Extract voice from audio using FFmpeg');
+        console.log('  --voice-method <m>   Voice extraction method: center|spectral|hybrid (default: hybrid)');
+        console.log('  --voice-quality <q>  Voice extraction quality: low|medium|high (default: medium)');
+        console.log('  --transcription <f>  Use WhisperX transcription file for timing');
+        console.log('  --use-whisperx       Enable WhisperX transcription workflow');
+        console.log('  --min-word-confidence <n> Minimum word confidence (0.0-1.0, default: 0.5)');
+        console.log('  --merge-threshold <s> Merge segments closer than X seconds (default: 0.5)');
         console.log('\nExample:');
-        console.log('  npm start song.mp3 lyrics.txt --output ./my-output --video');
+        console.log('  npm start song.mp3 lyrics.txt --extract-voice --transcription transcription.json');
+        console.log('  npm start song.mp3 lyrics.txt --use-whisperx --voice-method center');
         process.exit(1);
     }
 
@@ -40,6 +48,13 @@ async function main() {
     let format: 'json' | 'lrc' | 'srt' = 'json';
     let generateVideo = false;
     let videoQuality: 'low' | 'medium' | 'high' | 'ultra' = 'high';
+    let extractVoice = false;
+    let voiceMethod: 'center' | 'spectral' | 'hybrid' = 'hybrid';
+    let voiceQuality: 'low' | 'medium' | 'high' = 'medium';
+    let transcriptionFile: string | undefined;
+    let useWhisperX = false;
+    let minWordConfidence = 0.5;
+    let mergeThreshold = 0.5;
 
     for (let i = 2; i < args.length; i++) {
         if (args[i] === '--vocal' && args[i + 1]) {
@@ -58,6 +73,26 @@ async function main() {
             generateVideo = true;
         } else if (args[i] === '--quality' && args[i + 1]) {
             videoQuality = args[i + 1] as 'low' | 'medium' | 'high' | 'ultra';
+            i++;
+        } else if (args[i] === '--extract-voice') {
+            extractVoice = true;
+        } else if (args[i] === '--voice-method' && args[i + 1]) {
+            voiceMethod = args[i + 1] as 'center' | 'spectral' | 'hybrid';
+            i++;
+        } else if (args[i] === '--voice-quality' && args[i + 1]) {
+            voiceQuality = args[i + 1] as 'low' | 'medium' | 'high';
+            i++;
+        } else if (args[i] === '--transcription' && args[i + 1]) {
+            transcriptionFile = args[i + 1];
+            useWhisperX = true;
+            i++;
+        } else if (args[i] === '--use-whisperx') {
+            useWhisperX = true;
+        } else if (args[i] === '--min-word-confidence' && args[i + 1]) {
+            minWordConfidence = parseFloat(args[i + 1]);
+            i++;
+        } else if (args[i] === '--merge-threshold' && args[i + 1]) {
+            mergeThreshold = parseFloat(args[i + 1]);
             i++;
         }
     }
@@ -94,7 +129,14 @@ async function main() {
         outputDir,
         format,
         generateVideo,
-        videoQuality
+        videoQuality,
+        extractVoice,
+        voiceExtractionMethod: voiceMethod,
+        voiceQuality,
+        transcriptionFile,
+        useWhisperX,
+        minWordConfidence,
+        mergeThreshold
     });
 
     try {

@@ -10,6 +10,8 @@ import { AlignmentEngine } from './alignment';
 import { ImageGenerator, ImageStyle } from './imageGenerator';
 import { TimestampExporter } from './exporter';
 import { VideoGenerator } from './videoGenerator';
+import { VoiceExtractor } from './voiceExtractor';
+import { WhisperXTranscriber } from './whisperXTranscriber';
 
 export interface ProcessorConfig {
     audioFile: string;
@@ -20,6 +22,15 @@ export interface ProcessorConfig {
     format: 'json' | 'lrc' | 'srt';
     generateVideo?: boolean;
     videoQuality?: 'low' | 'medium' | 'high' | 'ultra';
+    // Voice extraction options
+    extractVoice?: boolean;
+    voiceExtractionMethod?: 'center' | 'spectral' | 'hybrid';
+    voiceQuality?: 'low' | 'medium' | 'high';
+    // WhisperX transcription options
+    transcriptionFile?: string;
+    useWhisperX?: boolean;
+    minWordConfidence?: number;
+    mergeThreshold?: number;
 }
 
 export interface TimedLyric {
@@ -122,6 +133,22 @@ export class LyricSyncProcessor {
         const lyrics = this.readLyrics();
         console.log(`   Found ${lyrics.length} lines\n`);
 
+        // Step 1.5: Extract voice if requested
+        let vocalFile = this.config.vocalFile;
+        if (this.config.extractVoice && !vocalFile) {
+            console.log('🎤 Step 1.5: Extracting voice from audio...');
+            const voiceExtractor = new VoiceExtractor({
+                inputFile: this.config.audioFile,
+                outputDir: this.config.outputDir,
+                method: this.config.voiceExtractionMethod || 'hybrid',
+                quality: this.config.voiceQuality || 'medium'
+            });
+            
+            const { outputPath } = await voiceExtractor.extractWithInfo();
+            vocalFile = outputPath;
+            console.log(`   Voice extracted to: ${vocalFile}\n`);
+        }
+
         console.log('🔄 Step 2: Analyzing audio and aligning lyrics...');
 
         const timestampsOutputPath = path.join(this.config.outputDir, 'timestamps.json');
@@ -178,11 +205,26 @@ export class LyricSyncProcessor {
                 text: lyric.text
             }));
             console.log(`   Loaded ${manualTimedLyrics.length} pre-timed segments\n`);
+        } else if (this.config.useWhisperX && this.config.transcriptionFile) {
+            console.log('   Using WhisperX transcription for timing...');
+            const transcriber = new WhisperXTranscriber({
+                transcriptionFile: this.config.transcriptionFile,
+                outputDir: this.config.outputDir,
+                minWordConfidence: this.config.minWordConfidence,
+                mergeThreshold: this.config.mergeThreshold
+            });
+            
+            manualTimedLyrics = await transcriber.toTimedLyrics();
+            console.log(`   ✅ Loaded ${manualTimedLyrics.length} WhisperX-timed segments\n`);
+            
+            // Export word timing and reports
+            await transcriber.exportWordTiming();
+            await transcriber.generateReport();
         } else {
             manualTimedLyrics = await this.alignmentEngine.align(
                 this.config.audioFile,
                 lyrics,
-                this.config.vocalFile
+                vocalFile
             );
             console.log(`   Aligned ${manualTimedLyrics.length} lyric segments\n`);
 

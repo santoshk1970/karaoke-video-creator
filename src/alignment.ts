@@ -1,4 +1,5 @@
 import { TimedLyric } from './processor';
+import { WhisperXTranscriber, WhisperXConfig } from './whisperXTranscriber';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import * as fs from 'fs';
@@ -7,6 +8,16 @@ import * as path from 'path';
 const execAsync = promisify(exec);
 
 export class AlignmentEngine {
+    /**
+     * Align lyrics using WhisperX transcription data
+     */
+    async alignWithWhisperX(transcriptionConfig: WhisperXConfig): Promise<TimedLyric[]> {
+        console.log('   Using WhisperX transcription for alignment...');
+        
+        const transcriber = new WhisperXTranscriber(transcriptionConfig);
+        return await transcriber.toTimedLyrics();
+    }
+
     /**
      * Align lyrics to audio using multiple strategies
      * 
