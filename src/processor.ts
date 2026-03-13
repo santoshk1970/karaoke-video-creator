@@ -7,7 +7,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { AlignmentEngine } from './alignment';
-import { ImageGenerator } from './imageGenerator';
+import { ImageGenerator, ImageStyle } from './imageGenerator';
 import { TimestampExporter } from './exporter';
 import { VideoGenerator } from './videoGenerator';
 
@@ -280,6 +280,7 @@ export class LyricSyncProcessor {
      * Generate images based on the plan (no recalculation, just execute)
      */
     private async generateImages(expandedLyrics: Array<TimedLyric & { segmentIndex?: number }>): Promise<void> {
+        let activeColor: string | undefined;
         const imagesDir = path.join(this.config.outputDir, 'images');
         if (!fs.existsSync(imagesDir)) {
             fs.mkdirSync(imagesDir, { recursive: true });
@@ -320,7 +321,7 @@ export class LyricSyncProcessor {
                 }
             }
 
-            await this.imageGenerator.generate(lyric.text, outputPath, {
+            const style: ImageStyle = {
                 width: 1920,
                 height: 1080,
                 fontSize: 80,
@@ -334,8 +335,18 @@ export class LyricSyncProcessor {
                 transliterationFontSize: 56,
                 transliterationColor: '#AAAAAA',
                 nextLineColor: '#888888',
-                nextLineFontSize: 64
-            }, nextLine);
+                nextLineFontSize: 64,
+                maleSpeakerColor: 'blue',
+                femaleSpeakerColor: 'pink',
+            };
+
+            if (lyric.text.startsWith('M:')) {
+                activeColor = style.maleSpeakerColor;
+            } else if (lyric.text.startsWith('F:')) {
+                activeColor = style.femaleSpeakerColor;
+            }
+
+            await this.imageGenerator.generate(lyric.text, outputPath, style, nextLine, activeColor);
 
             process.stdout.write(`\r   Progress: ${i + 1}/${expandedLyrics.length}`);
         }

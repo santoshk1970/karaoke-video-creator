@@ -8,6 +8,8 @@ export interface ImageStyle {
     fontSize: number;
     fontFamily: string;
     textColor: string;
+    maleSpeakerColor?: string;
+    femaleSpeakerColor?: string;
     backgroundColor: string;
     padding: number;
     textAlign?: 'left' | 'center' | 'right';
@@ -27,7 +29,6 @@ export class ImageGenerator {
     private lastInstrumentalImagePath: string | null = null;
 
     constructor() {
-        // Load instrument images from resources folder
         const instrumentsDir = path.join(__dirname, '..', 'resources', 'instruments');
         if (fs.existsSync(instrumentsDir)) {
             this.instrumentImages = fs.readdirSync(instrumentsDir)
@@ -36,14 +37,22 @@ export class ImageGenerator {
         }
     }
 
-    /**
-     * Generate an image with the given text and optional next line preview
-     */
-    async generate(text: string, outputPath: string, style: ImageStyle, nextLine?: string): Promise<void> {
+    private getSpeakerColor(text: string, style: ImageStyle, activeColor?: string): { color: string, processedText: string } {
+        if (text.startsWith('M:')) {
+            return { color: style.maleSpeakerColor || 'blue', processedText: text.substring(2).trim() };
+        } else if (text.startsWith('F:')) {
+            return { color: style.femaleSpeakerColor || 'pink', processedText: text.substring(2).trim() };
+        }
+        return { color: activeColor || style.textColor, processedText: text };
+    }
+
+    async generate(text: string, outputPath: string, style: ImageStyle, nextLine?: string, activeColor?: string): Promise<void> {
+        const { color, processedText } = this.getSpeakerColor(text, style, activeColor);
+        const currentTextColor = color;
+
         const canvas = createCanvas(style.width, style.height);
         const ctx = canvas.getContext('2d');
 
-        // Fill background with gradient or solid color
         if (style.useGradient && style.gradientColors) {
             const gradient = ctx.createLinearGradient(0, 0, 0, style.height);
             gradient.addColorStop(0, style.gradientColors[0]);
@@ -54,7 +63,6 @@ export class ImageGenerator {
         }
         ctx.fillRect(0, 0, style.width, style.height);
 
-        // Add text shadow if enabled
         if (style.textShadow) {
             ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
             ctx.shadowBlur = 15;
@@ -62,270 +70,124 @@ export class ImageGenerator {
             ctx.shadowOffsetY = 4;
         }
 
-        // Check if this is an instrumental segment
-        const isInstrumental = /^[♪\s]+.*[♪\s]+$/.test(text.trim());
-        
+        const isInstrumental = /^[♪\s]+.*[♪\s]+$/.test(processedText.trim());
+
         if (isInstrumental && this.instrumentImages.length > 0) {
-            // Use cycling instrument images for instrumental segments
             await this.drawInstrumentalImage(ctx, style);
         } else {
-            // Check if text contains transliteration (format: "Hindi | English")
-            const parts = text.split('|');
+            const parts = processedText.split('|');
             const hasTransliteration = parts.length === 2;
 
             if (hasTransliteration) {
-                // Dual language mode
                 const hindiText = parts[0].trim();
                 const englishText = parts[1].trim();
-                await this.drawDualLanguage(ctx, hindiText, englishText, style, nextLine);
+                await this.drawDualLanguage(ctx, hindiText, englishText, style, nextLine, currentTextColor);
             } else {
-            // Single language mode with optional next line preview
-            // Set text style
-            ctx.fillStyle = style.textColor;
-            ctx.font = `${style.fontSize}px ${style.fontFamily}`;
-            ctx.textAlign = style.textAlign || 'center';
-            ctx.textBaseline = 'middle';
-
-            // Handle multi-line text if needed
-            const lines = this.wrapText(ctx, text, style.width - (style.padding * 2));
-            
-            // Check if we should show next line (not instrumental)
-            const isInstrumental = /^[♪\s]+.*[♪\s]+$/.test(text.trim());
-            const shouldShowNextLine = nextLine && !isInstrumental && !/^[♪\s]+.*[♪\s]+$/.test(nextLine.trim());
-            
-            // Calculate vertical position
-            const lineHeight = style.fontSize * 1.2;
-            const nextLineHeight = shouldShowNextLine ? (style.nextLineFontSize || style.fontSize * 0.6) * 1.2 : 0;
-            const spacing = shouldShowNextLine ? 40 : 0;
-            const totalHeight = lines.length * lineHeight + (shouldShowNextLine ? nextLineHeight + spacing : 0);
-            let y: number;
-
-            switch (style.verticalAlign || 'middle') {
-                case 'top':
-                    y = style.padding + lineHeight / 2;
-                    break;
-                case 'bottom':
-                    y = style.height - style.padding - totalHeight + lineHeight / 2;
-                    break;
-                case 'middle':
-                default:
-                    y = (style.height - totalHeight) / 2 + lineHeight / 2;
-                    break;
-            }
-
-            // Draw each line of current text with bold support (highlighted)
-            const x = style.width / 2;
-            for (const line of lines) {
-                this.drawLineWithBold(ctx, line, x, y, style, true); // true = highlighted
-                y += lineHeight;
-            }
-            
-            // Draw next line preview if available
-            if (shouldShowNextLine) {
-                y += spacing;
-                const nextLineFontSize = style.nextLineFontSize || style.fontSize * 0.6;
-                const nextLineColor = style.nextLineColor || '#888888';
-                
-                ctx.fillStyle = nextLineColor;
-                ctx.font = `${nextLineFontSize}px ${style.fontFamily}`;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                
-                // Remove transliteration from next line if present
-                const nextLineParts = nextLine!.split('|');
-                const nextLineText = nextLineParts.length === 2 ? nextLineParts[0].trim() : nextLine!;
-                
-                const nextLines = this.wrapText(ctx, nextLineText, style.width - (style.padding * 2));
-                for (const line of nextLines) {
-                    ctx.fillText(line, x, y);
-                    y += nextLineHeight;
-                }
-            }
+                await this.drawSingleLanguage(ctx, processedText, style, nextLine, currentTextColor);
             }
         }
 
-        // Save to file
         const buffer = canvas.toBuffer('image/png');
         fs.writeFileSync(outputPath, buffer);
     }
 
-    /**
-     * Draw instrumental image (cycling through available images)
-     */
     private async drawInstrumentalImage(ctx: CanvasRenderingContext2D, style: ImageStyle): Promise<void> {
-        // Get current image and cycle to next
+        if (this.instrumentImages.length === 0) return;
         const imagePath = this.instrumentImages[this.instrumentImageIndex];
         this.instrumentImageIndex = (this.instrumentImageIndex + 1) % this.instrumentImages.length;
-        
-        // Store this as the last instrumental image for countdown backgrounds
         this.lastInstrumentalImagePath = imagePath;
 
         try {
             const image = await loadImage(imagePath);
-            
-            // Calculate dimensions to cover the canvas while maintaining aspect ratio
-            const canvasAspect = style.width / style.height;
-            const imageAspect = image.width / image.height;
-            
-            let drawWidth, drawHeight, offsetX, offsetY;
-            
-            if (imageAspect > canvasAspect) {
-                // Image is wider - fit to height
-                drawHeight = style.height;
-                drawWidth = drawHeight * imageAspect;
-                offsetX = (style.width - drawWidth) / 2;
-                offsetY = 0;
-            } else {
-                // Image is taller - fit to width
-                drawWidth = style.width;
-                drawHeight = drawWidth / imageAspect;
-                offsetX = 0;
-                offsetY = (style.height - drawHeight) / 2;
-            }
-            
-            // Draw image to cover canvas
-            ctx.drawImage(image, offsetX, offsetY, drawWidth, drawHeight);
-            
-            // Add a subtle overlay to darken the image slightly
+            this.drawAndCover(ctx, image, style);
             ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
             ctx.fillRect(0, 0, style.width, style.height);
-            
         } catch (error) {
             console.error(`Failed to load instrument image: ${imagePath}`, error);
-            // Fallback to gradient background if image fails to load
         }
     }
+    
+    private drawAndCover(ctx: CanvasRenderingContext2D, image: any, style: ImageStyle) {
+        const canvasAspect = style.width / style.height;
+        const imageAspect = image.width / image.height;
+        let drawWidth, drawHeight, offsetX, offsetY;
 
-    /**
-     * Helper method to draw a background image
-     */
+        if (imageAspect > canvasAspect) {
+            drawHeight = style.height;
+            drawWidth = drawHeight * imageAspect;
+            offsetX = (style.width - drawWidth) / 2;
+            offsetY = 0;
+        } else {
+            drawWidth = style.width;
+            drawHeight = drawWidth / imageAspect;
+            offsetX = 0;
+            offsetY = (style.height - drawHeight) / 2;
+        }
+        ctx.drawImage(image, offsetX, offsetY, drawWidth, drawHeight);
+    }
+
+
     private async drawBackgroundImage(ctx: CanvasRenderingContext2D, imagePath: string, style: ImageStyle): Promise<void> {
         try {
             const image = await loadImage(imagePath);
-            
-            // Calculate dimensions to cover the canvas while maintaining aspect ratio
-            const canvasAspect = style.width / style.height;
-            const imageAspect = image.width / image.height;
-            
-            let drawWidth, drawHeight, offsetX, offsetY;
-            
-            if (imageAspect > canvasAspect) {
-                // Image is wider - fit to height
-                drawHeight = style.height;
-                drawWidth = drawHeight * imageAspect;
-                offsetX = (style.width - drawWidth) / 2;
-                offsetY = 0;
-            } else {
-                // Image is taller - fit to width
-                drawWidth = style.width;
-                drawHeight = drawWidth / imageAspect;
-                offsetX = 0;
-                offsetY = (style.height - drawHeight) / 2;
-            }
-            
-            // Draw image to cover canvas
-            ctx.drawImage(image, offsetX, offsetY, drawWidth, drawHeight);
-            
-            // Add a darker overlay for countdown to make text more visible
+            this.drawAndCover(ctx, image, style);
             ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
             ctx.fillRect(0, 0, style.width, style.height);
-            
         } catch (error) {
             console.error(`Failed to load background image: ${imagePath}`, error);
         }
     }
 
-    /**
-     * Draw dual language text (Hindi top-left, English bottom-right) with optional next line
-     */
-    private async drawDualLanguage(ctx: CanvasRenderingContext2D, hindiText: string, englishText: string, style: ImageStyle, nextLine?: string): Promise<void> {
-        const padding = style.padding;
-        // Horizontal offset to move text right (away from left edge)
-        const xOffset = style.textShadow ? 500 : 0;
-        // Vertical offset - keep minimal to stay at top
-        const yOffset = style.textShadow ? 20 : 0;
-        
-        // Check if this is a countdown (contains only numbers and brackets)
+    private async drawDualLanguage(ctx: CanvasRenderingContext2D, hindiText: string, englishText: string, style: ImageStyle, nextLine: string | undefined, currentTextColor: string): Promise<void> {
         const isCountdown = /^[\[\]\d\s]+$/.test(hindiText.trim());
-        
+
         if (isCountdown) {
-            // For countdown, use last instrumental image as background if available
             if (this.lastInstrumentalImagePath) {
                 await this.drawBackgroundImage(ctx, this.lastInstrumentalImagePath, style);
             }
-            
-            // Draw countdown text centered
             ctx.fillStyle = style.textColor;
             ctx.font = `bold ${style.fontSize * 1.5}px ${style.fontFamily}`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            
-            // Add stronger shadow for countdown text
             ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
             ctx.shadowBlur = 20;
             ctx.shadowOffsetX = 5;
             ctx.shadowOffsetY = 5;
-            
-            const x = style.width / 2;
-            const y = style.height / 2;
-            this.drawLineWithBold(ctx, hindiText, x, y, {...style, textAlign: 'center', fontSize: style.fontSize * 1.5});
+            this.drawLineWithBold(ctx, hindiText, style.width / 2, style.height / 2, {...style, textAlign: 'center', fontSize: style.fontSize * 1.5});
             return;
         }
-        
-        // Draw Hindi text (top-left)
+
+        const padding = style.padding;
+        const xOffset = style.textShadow ? 500 : 0;
+        const yOffset = style.textShadow ? 20 : 0;
         const hindiLines = this.wrapText(ctx, hindiText, style.width / 2 - padding * 2);
         let hindiY = padding + yOffset;
         const lineHeight = style.fontSize * 1.2;
         const hindiX = padding + xOffset;
         
-        // Check if text has bold markers
-        const hasBoldMarkers = /\[([^\]]+)\]/.test(hindiText);
-        
-        if (hasBoldMarkers) {
-            // Use drawLineWithBold for bold text support
-            ctx.fillStyle = style.textColor;
-            ctx.font = `${style.fontSize}px ${style.fontFamily}`;
-            ctx.textAlign = 'left';
-            ctx.textBaseline = 'top';
-            
-            for (const line of hindiLines) {
-                this.drawLineWithBold(ctx, line, hindiX, hindiY, {...style, textAlign: 'left'});
-                hindiY += lineHeight;
-            }
-        } else {
-            // Use direct fillText for consistent alignment
-            ctx.fillStyle = style.textColor;
-            ctx.font = `${style.fontSize}px ${style.fontFamily}`;
-            ctx.textAlign = 'left';
-            ctx.textBaseline = 'top';
-            
-            for (const line of hindiLines) {
-                ctx.fillText(line, hindiX, hindiY);
-                hindiY += lineHeight;
-            }
+        ctx.fillStyle = currentTextColor;
+        ctx.font = `${style.fontSize}px ${style.fontFamily}`;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+
+        for (const line of hindiLines) {
+            this.drawLineWithBold(ctx, line, hindiX, hindiY, {...style, textAlign: 'left', textColor: currentTextColor});
+            hindiY += lineHeight;
         }
-        
-        // Draw next line preview if available (right below current Hindi lyric)
+
         let nextLineEnglish = '';
         if (nextLine) {
-            const isInstrumental = /^[♪\s]+.*[♪\s]+$/.test(nextLine.trim());
-            if (!isInstrumental) {
-                // Extract Hindi and English parts from next line
-                const nextLineParts = nextLine.split('|');
+            const { color: nextLineColorVal, processedText: nextLineProcessed } = this.getSpeakerColor(nextLine, style, currentTextColor);
+            if (!/^[♪\s]+.*[♪\s]+$/.test(nextLineProcessed.trim())) {
+                const nextLineParts = nextLineProcessed.split('|');
                 const nextLineHindi = nextLineParts[0].trim();
                 nextLineEnglish = nextLineParts.length === 2 ? nextLineParts[1].trim() : '';
                 
                 const nextLineFontSize = style.nextLineFontSize || style.fontSize * 0.8;
-                const nextLineColor = style.nextLineColor || '#888888';
-                
-                // Add spacing before next line
                 hindiY += 30;
                 
-                // Draw next Hindi line (left-aligned, same x position as current)
-                ctx.fillStyle = nextLineColor;
+                ctx.fillStyle = nextLineColorVal;
                 ctx.font = `${nextLineFontSize}px ${style.fontFamily}`;
-                ctx.textAlign = 'left';
-                ctx.textBaseline = 'top';
                 
                 const nextHindiLines = this.wrapText(ctx, nextLineHindi, style.width / 2 - padding * 2);
                 for (const line of nextHindiLines) {
@@ -335,14 +197,10 @@ export class ImageGenerator {
             }
         }
         
-        // Draw English transliteration (bottom-right)
-        // Increase font size by 25% (from 0.7 to 0.875 of main font size)
         const translitFontSize = style.transliterationFontSize ? style.transliterationFontSize * 1.25 : style.fontSize * 0.875;
-        
-        // Offset to move text left and up from bottom-right corner
-        const englishXOffset = 100; // Move left from right edge
-        const englishYOffset = 120;  // Move up from bottom edge (increased from 60)
-        const englishX = style.width - padding - englishXOffset; // Fixed x position for alignment
+        const englishXOffset = 100;
+        const englishYOffset = 120;
+        const englishX = style.width - padding - englishXOffset;
         
         ctx.fillStyle = style.transliterationColor || '#AAAAAA';
         ctx.font = `${translitFontSize}px ${style.fontFamily}`;
@@ -357,86 +215,105 @@ export class ImageGenerator {
             englishY += translitFontSize * 1.2;
         }
         
-        // Draw next English transliteration (bottom-right, below current English, same x position)
         if (nextLineEnglish) {
             const nextLineFontSize = style.nextLineFontSize || style.fontSize * 0.8;
             const nextEnglishFontSize = nextLineFontSize * 0.85;
-            const nextLineColor = style.nextLineColor || '#888888';
             
-            // Add spacing after current English
             englishY += 20;
-            
-            ctx.fillStyle = nextLineColor;
+            ctx.fillStyle = style.nextLineColor || '#888888';
             ctx.font = `${nextEnglishFontSize}px ${style.fontFamily}`;
-            ctx.textAlign = 'right';
-            ctx.textBaseline = 'bottom';
             
             const nextEnglishLines = this.wrapText(ctx, nextLineEnglish, style.width / 2 - padding * 2);
             for (const line of nextEnglishLines) {
-                ctx.fillText(line, englishX, englishY); // Use same englishX
+                ctx.fillText(line, englishX, englishY);
                 englishY += nextEnglishFontSize * 1.2;
             }
         }
     }
 
-    /**
-     * Draw a line with bold text support using [text] syntax
-     */
     private drawLineWithBold(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, style: ImageStyle, isHighlighted: boolean = false): void {
-        // Parse text for [bold] markers
+        const originalFillStyle = ctx.fillStyle;
         const parts: Array<{text: string, bold: boolean}> = [];
         const regex = /\[([^\]]+)\]|([^\[]+)/g;
         let match;
         
         while ((match = regex.exec(text)) !== null) {
-            if (match[1]) {
-                // Text inside [brackets] - make it bold
-                parts.push({ text: match[1], bold: true });
-            } else if (match[2]) {
-                // Regular text
-                parts.push({ text: match[2], bold: false });
-            }
+            if (match[1]) parts.push({ text: match[1], bold: true });
+            else if (match[2]) parts.push({ text: match[2], bold: false });
         }
         
-        // If no brackets found, just draw the text normally
         if (parts.length === 0) {
             ctx.fillText(text, x, y);
             return;
         }
         
-        // Calculate total width to center the text
         let totalWidth = 0;
         for (const part of parts) {
-            const font = part.bold ? `bold ${style.fontSize}px ${style.fontFamily}` : `${style.fontSize}px ${style.fontFamily}`;
-            ctx.font = font;
+            ctx.font = part.bold ? `bold ${style.fontSize}px ${style.fontFamily}` : `${style.fontSize}px ${style.fontFamily}`;
             totalWidth += ctx.measureText(part.text).width;
         }
         
-        // Start drawing from left of center
         let currentX = x - totalWidth / 2;
         
         for (const part of parts) {
-            // Increase bold text size by 50% (1.5x) instead of 20% (1.2x)
             const font = part.bold ? `bold ${style.fontSize * 1.5}px ${style.fontFamily}` : `${style.fontSize}px ${style.fontFamily}`;
             ctx.font = font;
             ctx.textAlign = 'left';
-            
-            // Use brighter color for bold text
             ctx.fillStyle = part.bold ? '#FFD700' : style.textColor;
-            
             ctx.fillText(part.text, currentX, y);
             currentX += ctx.measureText(part.text).width;
         }
         
-        // Reset styles
-        ctx.fillStyle = style.textColor;
+        ctx.fillStyle = originalFillStyle as string;
         ctx.font = `${style.fontSize}px ${style.fontFamily}`;
         ctx.textAlign = style.textAlign || 'center';
     }
 
-    /**
-     * Wrap text to fit within a given width
-     */
+    private async drawSingleLanguage(ctx: CanvasRenderingContext2D, text: string, style: ImageStyle, nextLine: string | undefined, currentTextColor: string): Promise<void> {
+        ctx.fillStyle = currentTextColor;
+        ctx.font = `${style.fontSize}px ${style.fontFamily}`;
+        ctx.textAlign = style.textAlign || 'center';
+        ctx.textBaseline = 'middle';
+
+        const lines = this.wrapText(ctx, text, style.width - (style.padding * 2));
+        const shouldShowNextLine = nextLine && !/^[♪\s]+.*[♪\s]+$/.test(nextLine.trim());
+
+        const lineHeight = style.fontSize * 1.2;
+        const nextLineHeight = shouldShowNextLine ? (style.nextLineFontSize || style.fontSize * 0.6) * 1.2 : 0;
+        const spacing = shouldShowNextLine ? 40 : 0;
+        const totalHeight = lines.length * lineHeight + (shouldShowNextLine ? nextLineHeight + spacing : 0);
+        let y: number;
+
+        switch (style.verticalAlign || 'middle') {
+            case 'top': y = style.padding + lineHeight / 2; break;
+            case 'bottom': y = style.height - style.padding - totalHeight + lineHeight / 2; break;
+            default: y = (style.height - totalHeight) / 2 + lineHeight / 2; break;
+        }
+
+        const x = style.width / 2;
+        for (const line of lines) {
+            this.drawLineWithBold(ctx, line, x, y, { ...style, textColor: currentTextColor }, true);
+            y += lineHeight;
+        }
+
+        if (shouldShowNextLine) {
+            y += spacing;
+            const { color: nextLineColorToUse, processedText: nextLineProcessed } = this.getSpeakerColor(nextLine!, style, currentTextColor);
+            
+            ctx.fillStyle = nextLineColorToUse;
+            ctx.font = `${style.nextLineFontSize || style.fontSize * 0.6}px ${style.fontFamily}`;
+            
+            const nextLineParts = nextLineProcessed.split('|');
+            const nextLineText = nextLineParts.length === 2 ? nextLineParts[0].trim() : nextLineProcessed;
+
+            const nextLines = this.wrapText(ctx, nextLineText, style.width - (style.padding * 2));
+            for (const line of nextLines) {
+                ctx.fillText(line, x, y);
+                y += nextLineHeight;
+            }
+        }
+    }
+
     private wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
         const words = text.split(' ');
         const lines: string[] = [];
@@ -454,36 +331,26 @@ export class ImageGenerator {
             }
         }
 
-        if (currentLine) {
-            lines.push(currentLine);
-        }
-
+        if (currentLine) lines.push(currentLine);
         return lines.length > 0 ? lines : [text];
     }
 
-    /**
-     * Generate a styled image with gradient background
-     */
     async generateStyled(text: string, outputPath: string): Promise<void> {
-        const width = 1920;
-        const height = 1080;
+        const { width, height } = { width: 1920, height: 1080 };
         const canvas = createCanvas(width, height);
         const ctx = canvas.getContext('2d');
 
-        // Create gradient background
         const gradient = ctx.createLinearGradient(0, 0, 0, height);
         gradient.addColorStop(0, '#1a1a2e');
         gradient.addColorStop(1, '#16213e');
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, width, height);
 
-        // Add text shadow
         ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
         ctx.shadowBlur = 10;
         ctx.shadowOffsetX = 3;
         ctx.shadowOffsetY = 3;
 
-        // Draw text
         ctx.fillStyle = '#ffffff';
         ctx.font = 'bold 80px Arial';
         ctx.textAlign = 'center';
@@ -499,7 +366,6 @@ export class ImageGenerator {
             y += lineHeight;
         }
 
-        // Save
         const buffer = canvas.toBuffer('image/png');
         fs.writeFileSync(outputPath, buffer);
     }

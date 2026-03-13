@@ -12,7 +12,8 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
-    "test:watch": "vitest --watch"
+    "test:watch": "vitest --watch",
+    "package": "./build-dmg.sh"
   },
   "keywords": [
     "lyrics",

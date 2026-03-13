@@ -8,35 +8,38 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ImageGenerator, ImageStyle } from '../imageGenerator';
 
 // Mock Canvas to avoid installation issues
+const mockContext = {
+    fillStyle: '',
+    font: '',
+    textAlign: '',
+    textBaseline: '',
+    shadowColor: '',
+    shadowBlur: 0,
+    shadowOffsetX: 0,
+    shadowOffsetY: 0,
+    fillRect: vi.fn(),
+    fillText: vi.fn(),
+    measureText: vi.fn(() => ({ width: 100 })),
+    createLinearGradient: vi.fn(() => ({
+        addColorStop: vi.fn(),
+    })),
+    beginPath: vi.fn(),
+    moveTo: vi.fn(),
+    lineTo: vi.fn(),
+    stroke: vi.fn(),
+    drawImage: vi.fn(),
+};
+
 vi.mock('canvas', () => ({
     createCanvas: vi.fn(() => ({
-        getContext: vi.fn(() => ({
-            fillStyle: '',
-            font: '',
-            textAlign: '',
-            textBaseline: '',
-            shadowColor: '',
-            shadowBlur: 0,
-            shadowOffsetX: 0,
-            shadowOffsetY: 0,
-            fillRect: vi.fn(),
-            fillText: vi.fn(),
-            measureText: vi.fn(() => ({ width: 100 })),
-            createLinearGradient: vi.fn(() => ({
-                addColorStop: vi.fn()
-            })),
-            beginPath: vi.fn(),
-            moveTo: vi.fn(),
-            lineTo: vi.fn(),
-            stroke: vi.fn()
-        })),
-        toBuffer: vi.fn(() => Buffer.from('fake-image-data'))
+        getContext: vi.fn(() => mockContext),
+        toBuffer: vi.fn(() => Buffer.from('fake-image-data')),
     })),
     registerFont: vi.fn(),
     loadImage: vi.fn(() => Promise.resolve({
         width: 1920,
-        height: 1080
-    }))
+        height: 1080,
+    })),
 }));
 
 // Mock fs to avoid file system dependency issues
@@ -49,9 +52,19 @@ vi.mock('fs', () => ({
 }));
 
 describe('ImageGenerator', () => {
+    const baseStyle: ImageStyle = {
+        width: 1920,
+        height: 1080,
+        fontSize: 80,
+        fontFamily: 'Arial',
+        textColor: '#FFFFFF',
+        backgroundColor: '#000000',
+        padding: 80,
+    };
     let generator: ImageGenerator;
 
     beforeEach(() => {
+        vi.clearAllMocks();
         generator = new ImageGenerator();
     });
 
@@ -63,64 +76,54 @@ describe('ImageGenerator', () => {
 
     describe('Text Processing', () => {
         it('should process text wrapping logic', async () => {
-            const style: ImageStyle = {
-                width: 800,
-                height: 600,
-                fontSize: 48,
-                fontFamily: 'Arial',
-                textColor: '#FFFFFF',
-                backgroundColor: '#000000',
-                padding: 40
-            };
-
-            // This should not throw even with long text
-            await expect(generator.generate('This is a test', '/fake/path.png', style))
+            await expect(generator.generate('This is a test', '/fake/path.png', baseStyle))
                 .resolves.not.toThrow();
         });
 
         it('should handle empty text', async () => {
-            const style: ImageStyle = {
-                width: 800,
-                height: 600,
-                fontSize: 48,
-                fontFamily: 'Arial',
-                textColor: '#FFFFFF',
-                backgroundColor: '#000000',
-                padding: 40
-            };
-
-            await expect(generator.generate('', '/fake/path.png', style))
+            await expect(generator.generate('', '/fake/path.png', baseStyle))
                 .resolves.not.toThrow();
         });
 
         it('should handle dual language text format', async () => {
-            const style: ImageStyle = {
-                width: 1920,
-                height: 1080,
-                fontSize: 80,
-                fontFamily: 'Arial',
-                textColor: '#FFFFFF',
-                backgroundColor: '#000000',
-                padding: 80,
-                transliterationFontSize: 56,
-                transliterationColor: '#AAAAAA'
-            };
-
-            await expect(generator.generate('हिंदी | English', '/fake/path.png', style))
+            await expect(generator.generate('हिंदी | English', '/fake/path.png', baseStyle))
                 .resolves.not.toThrow();
+        });
+    });
+
+    describe('Speaker Color Handling', () => {
+        it('should use blue for male speaker prefix M:', async () => {
+            await generator.generate('M: This is a male voice', '/fake/path.png', baseStyle);
+            expect(mockContext.fillStyle).toBe('blue');
+        });
+
+        it('should use pink for female speaker prefix F:', async () => {
+            await generator.generate('F: This is a female voice', '/fake/path.png', baseStyle);
+            expect(mockContext.fillStyle).toBe('pink');
+        });
+
+        it('should use custom male speaker color if provided', async () => {
+            const customStyle = { ...baseStyle, maleSpeakerColor: '#0000FF' };
+            await generator.generate('M: Custom male color', '/fake/path.png', customStyle);
+            expect(mockContext.fillStyle).toBe('#0000FF');
+        });
+
+        it('should use custom female speaker color if provided', async () => {
+            const customStyle = { ...baseStyle, femaleSpeakerColor: '#FFC0CB' };
+            await generator.generate('F: Custom female color', '/fake/path.png', customStyle);
+            expect(mockContext.fillStyle).toBe('#FFC0CB');
+        });
+
+        it('should use default text color when no prefix is present', async () => {
+            await generator.generate('This is a neutral voice', '/fake/path.png', baseStyle);
+            expect(mockContext.fillStyle).toBe(baseStyle.textColor);
         });
     });
 
     describe('Style Processing', () => {
         it('should handle gradient styles', async () => {
             const style: ImageStyle = {
-                width: 800,
-                height: 600,
-                fontSize: 48,
-                fontFamily: 'Arial',
-                textColor: '#FFFFFF',
-                backgroundColor: '#000000',
-                padding: 40,
+                ...baseStyle,
                 useGradient: true,
                 gradientColors: ['#FF0000', '#0000FF']
             };
@@ -131,13 +134,7 @@ describe('ImageGenerator', () => {
 
         it('should handle text shadow styles', async () => {
             const style: ImageStyle = {
-                width: 800,
-                height: 600,
-                fontSize: 48,
-                fontFamily: 'Arial',
-                textColor: '#FFFFFF',
-                backgroundColor: '#000000',
-                padding: 40,
+                ...baseStyle,
                 textShadow: true
             };
 
@@ -150,13 +147,7 @@ describe('ImageGenerator', () => {
             
             for (const align of alignments) {
                 const style: ImageStyle = {
-                    width: 800,
-                    height: 600,
-                    fontSize: 48,
-                    fontFamily: 'Arial',
-                    textColor: '#FFFFFF',
-                    backgroundColor: '#000000',
-                    padding: 40,
+                    ...baseStyle,
                     textAlign: align
                 };
 
@@ -170,13 +161,7 @@ describe('ImageGenerator', () => {
             
             for (const align of alignments) {
                 const style: ImageStyle = {
-                    width: 800,
-                    height: 600,
-                    fontSize: 48,
-                    fontFamily: 'Arial',
-                    textColor: '#FFFFFF',
-                    backgroundColor: '#000000',
-                    padding: 40,
+                    ...baseStyle,
                     verticalAlign: align
                 };
 
@@ -188,47 +173,17 @@ describe('ImageGenerator', () => {
 
     describe('Special Text Handling', () => {
         it('should handle instrumental text markers', async () => {
-            const style: ImageStyle = {
-                width: 800,
-                height: 600,
-                fontSize: 48,
-                fontFamily: 'Arial',
-                textColor: '#FFFFFF',
-                backgroundColor: '#000000',
-                padding: 40
-            };
-
-            await expect(generator.generate('♪ Instrumental ♪', '/fake/path.png', style))
+            await expect(generator.generate('♪ Instrumental ♪', '/fake/path.png', baseStyle))
                 .resolves.not.toThrow();
         });
 
         it('should handle countdown text format', async () => {
-            const style: ImageStyle = {
-                width: 800,
-                height: 600,
-                fontSize: 48,
-                fontFamily: 'Arial',
-                textColor: '#FFFFFF',
-                backgroundColor: '#000000',
-                padding: 40
-            };
-
-            await expect(generator.generate('[4] |', '/fake/path.png', style))
+            await expect(generator.generate('[4] |', '/fake/path.png', baseStyle))
                 .resolves.not.toThrow();
         });
 
         it('should handle bold text markers', async () => {
-            const style: ImageStyle = {
-                width: 800,
-                height: 600,
-                fontSize: 48,
-                fontFamily: 'Arial',
-                textColor: '#FFFFFF',
-                backgroundColor: '#000000',
-                padding: 40
-            };
-
-            await expect(generator.generate('Normal [Bold] Normal', '/fake/path.png', style))
+            await expect(generator.generate('Normal [Bold] Normal', '/fake/path.png', baseStyle))
                 .resolves.not.toThrow();
         });
     });
@@ -236,13 +191,7 @@ describe('ImageGenerator', () => {
     describe('Next Line Preview', () => {
         it('should handle next line preview', async () => {
             const style: ImageStyle = {
-                width: 800,
-                height: 600,
-                fontSize: 48,
-                fontFamily: 'Arial',
-                textColor: '#FFFFFF',
-                backgroundColor: '#000000',
-                padding: 40,
+                ...baseStyle,
                 nextLineColor: '#888888',
                 nextLineFontSize: 32
             };
@@ -253,13 +202,7 @@ describe('ImageGenerator', () => {
 
         it('should handle next line with dual language', async () => {
             const style: ImageStyle = {
-                width: 1920,
-                height: 1080,
-                fontSize: 80,
-                fontFamily: 'Arial',
-                textColor: '#FFFFFF',
-                backgroundColor: '#000000',
-                padding: 80,
+                ...baseStyle,
                 nextLineColor: '#888888',
                 nextLineFontSize: 64
             };
@@ -279,12 +222,10 @@ describe('ImageGenerator', () => {
     describe('Error Handling', () => {
         it('should handle very small dimensions', async () => {
             const style: ImageStyle = {
+                ...baseStyle,
                 width: 100,
                 height: 100,
                 fontSize: 12,
-                fontFamily: 'Arial',
-                textColor: '#FFFFFF',
-                backgroundColor: '#000000',
                 padding: 5
             };
 
@@ -294,12 +235,10 @@ describe('ImageGenerator', () => {
 
         it('should handle very large dimensions', async () => {
             const style: ImageStyle = {
+                ...baseStyle,
                 width: 4000,
                 height: 3000,
                 fontSize: 200,
-                fontFamily: 'Arial',
-                textColor: '#FFFFFF',
-                backgroundColor: '#000000',
                 padding: 100
             };
 
