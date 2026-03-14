@@ -1,0 +1,12 @@
+{
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 10.0,
+      "text": "SeamlessM4T transcription failed: facebook/seamless-m4t-large does not appear to have a file named pytorch_model.bin or model.safetensors.",
+      "words": []
+    }
+  ],
+  "language": "hi",
+  "model": "seamless-m4t-large (error)"
+}

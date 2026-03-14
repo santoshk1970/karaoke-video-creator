@@ -1,0 +1,177 @@
+<!-- Step 1: Time Lyrics (Enhanced with SeamlessM4T) -->
+                    <div class="step-card bg-white rounded-lg shadow p-6">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <span class="text-blue-600 font-bold">1</span>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-800">Time Lyrics</h3>
+                                    <p class="text-sm text-gray-500">Choose: Manual timing, SeamlessM4T AI, or Hybrid approach</p>
+                                </div>
+                            </div>
+                            <span id="status-1" class="text-2xl">⚪</span>
+                        </div>
+
+                        <!-- Timing Method Selection -->
+                        <div class="mb-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                <i class="fas fa-cog mr-2"></i>Choose Timing Method:
+                            </label>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                <label class="flex items-center p-3 bg-white border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-500 transition">
+                                    <input type="radio" name="timingMethod" value="manual" checked class="mr-3">
+                                    <div>
+                                        <div class="font-semibold text-sm">Manual Timing</div>
+                                        <div class="text-xs text-gray-500">Traditional manual marking</div>
+                                    </div>
+                                </label>
+                                <label class="flex items-center p-3 bg-white border-2 border-gray-200 rounded-lg cursor-pointer hover:border-purple-500 transition">
+                                    <input type="radio" name="timingMethod" value="seamless" class="mr-3">
+                                    <div>
+                                        <div class="font-semibold text-sm">SeamlessM4T AI</div>
+                                        <div class="text-xs text-gray-500">AI transcription + timing</div>
+                                    </div>
+                                </label>
+                                <label class="flex items-center p-3 bg-white border-2 border-gray-200 rounded-lg cursor-pointer hover:border-green-500 transition">
+                                    <input type="radio" name="timingMethod" value="hybrid" class="mr-3">
+                                    <div>
+                                        <div class="font-semibold text-sm">Hybrid (Recommended)</div>
+                                        <div class="text-xs text-gray-500">AI timing + your lyrics</div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Lyrics Input Section -->
+                        <div class="mb-4">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                <i class="fas fa-file-text mr-2"></i>Lyrics File:
+                            </label>
+                            <div class="flex gap-2">
+                                <button onclick="uploadLyrics()" id="btn-upload-lyrics"
+                                    class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition">
+                                    <i class="fas fa-upload mr-2"></i>Upload Lyrics
+                                </button>
+                                <button onclick="transcribeWithSeamless()" id="btn-transcribe-seamless"
+                                    class="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition">
+                                    <i class="fas fa-robot mr-2"></i>Transcribe with AI
+                                </button>
+                            </div>
+                            <input type="file" id="lyricsFile" accept=".txt" class="hidden">
+                            <div id="lyrics-preview" class="mt-3 p-3 bg-gray-50 border border-gray-200 rounded-lg hidden">
+                                <div class="text-sm font-semibold text-gray-700 mb-2">Lyrics Preview:</div>
+                                <div id="lyrics-preview-text" class="text-sm text-gray-600 max-h-32 overflow-y-auto"></div>
+                            </div>
+                        </div>
+
+                        <!-- AI Transcription Editor (Hidden by default) -->
+                        <div id="ai-transcription-editor" class="hidden mb-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                            <div class="flex items-center justify-between mb-3">
+                                <h4 class="font-semibold text-purple-800">
+                                    <i class="fas fa-edit mr-2"></i>Edit AI Transcription
+                                </h4>
+                                <button onclick="saveEditedTranscription()" class="bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold py-1 px-3 rounded transition">
+                                    <i class="fas fa-save mr-1"></i>Save
+                                </button>
+                            </div>
+                            <textarea id="ai-transcription-text" 
+                                class="w-full h-48 p-3 border border-purple-300 rounded-lg font-mono text-sm"
+                                placeholder="AI transcription will appear here for editing..."></textarea>
+                            <div class="mt-2 text-xs text-purple-600">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                Edit the transcription above to fix any errors. The timing will be preserved.
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="space-y-3">
+                            <!-- Manual Timing Controls -->
+                            <div id="manual-controls" class="space-y-2">
+                                <details class="bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
+                                    <summary class="p-3 cursor-pointer hover:bg-blue-100 rounded-lg">
+                                        <i class="fas fa-info-circle mr-2"></i>
+                                        <strong>Manual Timing Instructions</strong>
+                                    </summary>
+                                    <ul class="px-3 pb-3 ml-4 space-y-1">
+                                        <li>• Opens in new browser window</li>
+                                        <li>• Shows which line to listen for</li>
+                                        <li>• Press SPACE when you HEAR that line</li>
+                                        <li>• Displays 1 second before mark (gives time to prepare)</li>
+                                    </ul>
+                                </details>
+                                <div class="flex gap-2">
+                                    <button onclick="reloadLyrics()" id="btn-reload-lyrics"
+                                        class="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition">
+                                        <i class="fas fa-sync-alt mr-2"></i>Reload Lyrics
+                                    </button>
+                                    <button onclick="openTimingEditor()" id="btn-edit-timing" disabled
+                                        class="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-2 px-4 rounded-lg transition disabled:bg-gray-300 disabled:cursor-not-allowed">
+                                        <i class="fas fa-edit mr-2"></i>Edit Timing
+                                    </button>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button onclick="timeLyrics()" id="btn-time" disabled
+                                        class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition disabled:bg-gray-300 disabled:cursor-not-allowed">
+                                        <i class="fas fa-clock mr-2"></i>Start Timing Tool
+                                    </button>
+                                    <button onclick="killAudio()" id="btn-kill-audio" disabled
+                                        class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition disabled:bg-gray-300 disabled:cursor-not-allowed">
+                                        <i class="fas fa-stop-circle"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- AI Timing Controls -->
+                            <div id="ai-controls" class="hidden space-y-2">
+                                <div class="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="text-sm font-semibold text-purple-800">
+                                            <i class="fas fa-magic mr-2"></i>AI Timing Status
+                                        </span>
+                                        <span id="ai-timing-status" class="text-sm text-purple-600">Ready</span>
+                                    </div>
+                                    <div id="ai-progress" class="hidden">
+                                        <div class="w-full bg-purple-200 rounded-full h-2 mb-2">
+                                            <div id="ai-progress-bar" class="bg-purple-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                                        </div>
+                                        <div class="text-xs text-purple-600">
+                                            <span id="ai-progress-text">Processing...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button onclick="generateAITiming()" id="btn-generate-ai-timing"
+                                        class="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition">
+                                        <i class="fas fa-play mr-2"></i>Generate AI Timing
+                                    </button>
+                                    <button onclick="previewAITiming()" id="btn-preview-ai-timing" disabled
+                                        class="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition disabled:bg-gray-300 disabled:cursor-not-allowed">
+                                        <i class="fas fa-eye mr-2"></i>Preview
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Hybrid Controls -->
+                            <div id="hybrid-controls" class="hidden space-y-2">
+                                <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+                                    <div class="text-sm font-semibold text-green-800 mb-2">
+                                        <i class="fas fa-balance-scale mr-2"></i>Hybrid Approach (Recommended)
+                                    </div>
+                                    <div class="text-xs text-green-600">
+                                        Uses your exact lyrics with AI-generated timing for maximum accuracy
+                                    </div>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button onclick="generateHybridTiming()" id="btn-generate-hybrid-timing"
+                                        class="flex-1 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition">
+                                        <i class="fas fa-play mr-2"></i>Generate Hybrid Timing
+                                    </button>
+                                    <button onclick="previewHybridTiming()" id="btn-preview-hybrid-timing" disabled
+                                        class="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition disabled:bg-gray-300 disabled:cursor-not-allowed">
+                                        <i class="fas fa-eye mr-2"></i>Preview
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>

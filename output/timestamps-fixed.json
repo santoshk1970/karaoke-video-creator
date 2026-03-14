@@ -1,0 +1,34 @@
+{
+  "version": "1.0",
+  "metadata": {
+    "generatedAt": "2026-03-13T15:21:00.000Z",
+    "totalLines": 36,
+    "duration": 259.2740625
+  },
+  "lyrics": [
+    {
+      "index": 0,
+      "startTime": 0,
+      "endTime": 31.45,
+      "duration": 31.45,
+      "text": "♪ Instrumental ♪",
+      "imagePath": "images/lyric_000.png"
+    },
+    {
+      "index": 1,
+      "startTime": 31.45,
+      "endTime": 32.5,
+      "duration": 1.05,
+      "text": "M:मेरी नींदों में तुम, मेरे ख़्वाबों में तुम",
+      "imagePath": "images/lyric_001.png"
+    },
+    {
+      "index": 2,
+      "startTime": 32.5,
+      "endTime": 33.15,
+      "duration": 0.65,
+      "text": "unknown:हो चुके हम तुम्हारी मोहब्बत में गुम",
+      "imagePath": "images/lyric_002.png"
+    }
+  ]
+}

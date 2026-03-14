@@ -1,0 +1,338 @@
+{
+  "version": "1.0",
+  "metadata": {
+    "generatedAt": "2026-03-13T20:57:33.823Z",
+    "totalLines": 42,
+    "duration": 245.032
+  },
+  "lyrics": [
+    {
+      "index": 0,
+      "startTime": 1,
+      "endTime": 2,
+      "duration": 1,
+      "text": "♪ Countdown 5 ♪",
+      "imagePath": "images/countdown_5.png"
+    },
+    {
+      "index": 1,
+      "startTime": 2,
+      "endTime": 3,
+      "duration": 1,
+      "text": "♪ Countdown 4 ♪",
+      "imagePath": "images/countdown_4.png"
+    },
+    {
+      "index": 2,
+      "startTime": 3,
+      "endTime": 4,
+      "duration": 1,
+      "text": "♪ Countdown 3 ♪",
+      "imagePath": "images/countdown_3.png"
+    },
+    {
+      "index": 3,
+      "startTime": 4,
+      "endTime": 5,
+      "duration": 1,
+      "text": "♪ Countdown 2 ♪",
+      "imagePath": "images/countdown_2.png"
+    },
+    {
+      "index": 4,
+      "startTime": 5,
+      "endTime": 6,
+      "duration": 1,
+      "text": "♪ Countdown 1 ♪",
+      "imagePath": "images/countdown_1.png"
+    },
+    {
+      "index": 5,
+      "startTime": 6,
+      "endTime": 36,
+      "duration": 30,
+      "text": "♪ Instrumental ♪",
+      "imagePath": "images/instrumental_prelude.jpg"
+    },
+    {
+      "index": 6,
+      "startTime": 67.318,
+      "endTime": 73.4241142857143,
+      "duration": 6.106114285714288,
+      "text": "मेरी नींदों में तुम, मेरे ख़्वाबों में तुम",
+      "imagePath": "images/lyric_000.png"
+    },
+    {
+      "index": 7,
+      "startTime": 73.4241142857143,
+      "endTime": 79.53022857142858,
+      "duration": 6.106114285714284,
+      "text": "हो चुके हम तुम्हारी मोहब्बत में गुम",
+      "imagePath": "images/lyric_001.png"
+    },
+    {
+      "index": 8,
+      "startTime": 79.53022857142858,
+      "endTime": 85.63634285714286,
+      "duration": 6.106114285714284,
+      "text": "मेरी नींदों में तुम, मेरे ख़्वाबों में तुम",
+      "imagePath": "images/lyric_002.png"
+    },
+    {
+      "index": 9,
+      "startTime": 85.63634285714286,
+      "endTime": 91.74245714285715,
+      "duration": 6.106114285714284,
+      "text": "हो चुके हम तुम्हारी मोहब्बत में गुम",
+      "imagePath": "images/lyric_003.png"
+    },
+    {
+      "index": 10,
+      "startTime": 91.74245714285715,
+      "endTime": 97.84857142857143,
+      "duration": 6.106114285714284,
+      "text": "मन की बीना की धुन, तू बलम आज सुन",
+      "imagePath": "images/lyric_004.png"
+    },
+    {
+      "index": 11,
+      "startTime": 97.84857142857143,
+      "endTime": 103.95468571428572,
+      "duration": 6.106114285714284,
+      "text": "मेरी नज़रों ने तुझको लिया आज चुन",
+      "imagePath": "images/lyric_005.png"
+    },
+    {
+      "index": 12,
+      "startTime": 103.95468571428572,
+      "endTime": 110.0608,
+      "duration": 6.106114285714284,
+      "text": "मन की बीना की धुन, तू बलम आज सुन",
+      "imagePath": "images/lyric_006.png"
+    },
+    {
+      "index": 13,
+      "startTime": 110.0608,
+      "endTime": 116.16691428571428,
+      "duration": 6.106114285714284,
+      "text": "मेरे दिल की लगी तू, मेरी ज़िंदगी तू",
+      "imagePath": "images/lyric_007.png"
+    },
+    {
+      "index": 14,
+      "startTime": 116.16691428571428,
+      "endTime": 122.27302857142857,
+      "duration": 6.106114285714284,
+      "text": "मेरी हर नज़र है तेरी दास्तां",
+      "imagePath": "images/lyric_008.png"
+    },
+    {
+      "index": 15,
+      "startTime": 122.27302857142857,
+      "endTime": 128.37914285714285,
+      "duration": 6.106114285714284,
+      "text": "मेरे दिल की लगी तू, मेरी ज़िंदगी तू",
+      "imagePath": "images/lyric_009.png"
+    },
+    {
+      "index": 16,
+      "startTime": 128.37914285714285,
+      "endTime": 134.48525714285714,
+      "duration": 6.106114285714284,
+      "text": "मेरी हर नज़र है तेरी दास्तां",
+      "imagePath": "images/lyric_010.png"
+    },
+    {
+      "index": 17,
+      "startTime": 134.48525714285714,
+      "endTime": 140.59137142857142,
+      "duration": 6.106114285714284,
+      "text": "मेरे दिल की बहारें तुम्हीको पुकारें",
+      "imagePath": "images/lyric_011.png"
+    },
+    {
+      "index": 18,
+      "startTime": 140.59137142857145,
+      "endTime": 146.69748571428573,
+      "duration": 6.106114285714284,
+      "text": "तुम्ही से है आबाद मेरा जहाँ",
+      "imagePath": "images/lyric_012.png"
+    },
+    {
+      "index": 19,
+      "startTime": 146.69748571428573,
+      "endTime": 152.80360000000002,
+      "duration": 6.106114285714284,
+      "text": "मेरे दिल की बहारें तुम्हीको पुकारें",
+      "imagePath": "images/lyric_013.png"
+    },
+    {
+      "index": 20,
+      "startTime": 152.80360000000002,
+      "endTime": 158.9097142857143,
+      "duration": 6.106114285714284,
+      "text": "तुम्ही से है आबाद मेरा जहाँ",
+      "imagePath": "images/lyric_014.png"
+    },
+    {
+      "index": 21,
+      "startTime": 158.9097142857143,
+      "endTime": 165.01582857142859,
+      "duration": 6.106114285714298,
+      "text": "तू मेरा नाज़ है, मेरा अंदाज़ है,",
+      "imagePath": "images/lyric_015.png"
+    },
+    {
+      "index": 22,
+      "startTime": 165.01582857142859,
+      "endTime": 171.12194285714287,
+      "duration": 6.106114285714284,
+      "text": "दिल की आवाज़ है",
+      "imagePath": "images/lyric_016.png"
+    },
+    {
+      "index": 23,
+      "startTime": 171.12194285714287,
+      "endTime": 177.22805714285715,
+      "duration": 6.106114285714284,
+      "text": "मेरे नींदों में तुम, मेरे ख्वाबों में तुम",
+      "imagePath": "images/lyric_017.png"
+    },
+    {
+      "index": 24,
+      "startTime": 177.22805714285715,
+      "endTime": 183.33417142857144,
+      "duration": 6.106114285714284,
+      "text": "हो चुके हम तुम्हारी मोहब्बत में गुम",
+      "imagePath": "images/lyric_018.png"
+    },
+    {
+      "index": 25,
+      "startTime": 183.33417142857144,
+      "endTime": 189.44028571428572,
+      "duration": 6.106114285714284,
+      "text": "मन की बीना की धुन, तू बलम आज सुन",
+      "imagePath": "images/lyric_019.png"
+    },
+    {
+      "index": 26,
+      "startTime": 189.44028571428572,
+      "endTime": 195.5464,
+      "duration": 6.106114285714284,
+      "text": "दिल पे छाई खुशी है, लबों पर हसीं है",
+      "imagePath": "images/lyric_020.png"
+    },
+    {
+      "index": 27,
+      "startTime": 195.5464,
+      "endTime": 201.6525142857143,
+      "duration": 6.106114285714284,
+      "text": "खिली है तेरे प्यार की चाँदनी",
+      "imagePath": "images/lyric_021.png"
+    },
+    {
+      "index": 28,
+      "startTime": 201.6525142857143,
+      "endTime": 207.75862857142857,
+      "duration": 6.106114285714284,
+      "text": "दिल पे छाई खुशी है, लबों पर हसीं है",
+      "imagePath": "images/lyric_022.png"
+    },
+    {
+      "index": 29,
+      "startTime": 207.75862857142857,
+      "endTime": 213.86474285714286,
+      "duration": 6.106114285714284,
+      "text": "खिली है तेरे प्यार की चाँदनी",
+      "imagePath": "images/lyric_023.png"
+    },
+    {
+      "index": 30,
+      "startTime": 213.8647428571429,
+      "endTime": 219.97085714285717,
+      "duration": 6.106114285714284,
+      "text": "झूमती हैं निगाहें, नशा छा रहा है",
+      "imagePath": "images/lyric_024.png"
+    },
+    {
+      "index": 31,
+      "startTime": 219.97085714285717,
+      "endTime": 226.07697142857145,
+      "duration": 6.106114285714284,
+      "text": "के दिल गा रहा है तेरी रागिनी",
+      "imagePath": "images/lyric_025.png"
+    },
+    {
+      "index": 32,
+      "startTime": 226.07697142857145,
+      "endTime": 232.18308571428574,
+      "duration": 6.106114285714284,
+      "text": "झूमती हैं निगाहें, नशा छा रहा है",
+      "imagePath": "images/lyric_026.png"
+    },
+    {
+      "index": 33,
+      "startTime": 232.18308571428574,
+      "endTime": 238.28920000000002,
+      "duration": 6.106114285714284,
+      "text": "के दिल गा रहा है तेरी रागिनी",
+      "imagePath": "images/lyric_027.png"
+    },
+    {
+      "index": 34,
+      "startTime": 238.28920000000002,
+      "endTime": 244.3953142857143,
+      "duration": 6.106114285714284,
+      "text": "हौले-हौले सजन, मेरा केहता है मन",
+      "imagePath": "images/lyric_028.png"
+    },
+    {
+      "index": 35,
+      "startTime": 244.3953142857143,
+      "endTime": 250.5014285714286,
+      "duration": 6.106114285714284,
+      "text": "अब तो लागी लगन",
+      "imagePath": "images/lyric_029.png"
+    },
+    {
+      "index": 36,
+      "startTime": 250.5014285714286,
+      "endTime": 256.6075428571429,
+      "duration": 6.106114285714284,
+      "text": "मेरी नींदो में तुम, मेरे ख़्वाबों में तुम",
+      "imagePath": "images/lyric_030.png"
+    },
+    {
+      "index": 37,
+      "startTime": 256.6075428571429,
+      "endTime": 262.7136571428572,
+      "duration": 6.106114285714284,
+      "text": "हो चुके हम तुम्हारी मोहब्बत में गुम",
+      "imagePath": "images/lyric_031.png"
+    },
+    {
+      "index": 38,
+      "startTime": 262.7136571428572,
+      "endTime": 268.81977142857147,
+      "duration": 6.106114285714284,
+      "text": "मन की बीना की धुन, तू बलम आज सुन",
+      "imagePath": "images/lyric_032.png"
+    },
+    {
+      "index": 39,
+      "startTime": 268.81977142857147,
+      "endTime": 274.92588571428576,
+      "duration": 6.106114285714284,
+      "text": "मेरी नज़रोंने तुझको लिया आज चुन",
+      "imagePath": "images/lyric_033.png"
+    },
+    {
+      "index": 40,
+      "startTime": 274.92588571428576,
+      "endTime": 281.03200000000004,
+      "duration": 6.106114285714284,
+      "text": "मन की बीना की धुन, तू बलम आज सुन",
+      "imagePath": "images/lyric_034.png"
+    }
+  ]
+}

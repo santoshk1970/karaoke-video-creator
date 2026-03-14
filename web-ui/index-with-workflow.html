@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Karaoke Video Creator - Project Workflow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .step-card {
+            transition: all 0.3s ease;
+        }
+
+        .step-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .output-panel {
+            font-family: 'Courier New', monospace;
+            background: #1e1e1e;
+            color: #d4d4d4;
+        }
+
+        .log-line {
+            padding: 4px 12px;
+            border-left: 3px solid transparent;
+        }
+
+        .log-info {
+            border-left-color: #3b82f6;
+        }
+
+        .log-success {
+            border-left-color: #10b981;
+        }
+
+        .log-error {
+            border-left-color: #ef4444;
+        }
+
+        .log-warning {
+            border-left-color: #f59e0b;
+        }
+
+        .progress-bar {
+            transition: width 0.3s ease;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .processing {
+            animation: pulse 2s infinite;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50">
+    <div class="min-h-screen p-6">
+        <!-- Header -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800 flex items-center">
+                        <i class="fas fa-music mr-3 text-blue-600"></i>
+                        Karaoke Video Creator
+                    </h1>
+                    <p class="text-gray-600 mt-1">Project Workflow with SeamlessM4T AI</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button onclick="openProjectModal()" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition">
+                        <i class="fas fa-plus mr-2"></i>Create New Project
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Left Column: Project Workflow -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Welcome Screen (shown when no project) -->
+                <div id="welcomeScreen" class="step-card bg-white rounded-lg shadow p-8">
+                    <div class="text-center">
+                        <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-rocket text-3xl text-blue-600"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-gray-800 mb-4">Welcome to Karaoke Creator</h2>
+                        <p class="text-gray-600 mb-6">Create professional karaoke videos with AI-powered transcription and timing</p>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                            <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                                <i class="fas fa-microphone-alt text-2xl text-purple-600 mb-2"></i>
+                                <h3 class="font-semibold text-purple-800 mb-1">AI Vocal Separation</h3>
+                                <p class="text-sm text-purple-600">Demucs AI for perfect vocal extraction</p>
+                            </div>
+                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <i class="fas fa-robot text-2xl text-blue-600 mb-2"></i>
+                                <h3 class="font-semibold text-blue-800 mb-1">SeamlessM4T Transcription</h3>
+                                <p class="text-sm text-blue-600">AI transcription with editing capability</p>
+                            </div>
+                            <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                                <i class="fas fa-video text-2xl text-green-600 mb-2"></i>
+                                <h3 class="font-semibold text-green-800 mb-1">Video Generation</h3>
+                                <p class="text-sm text-green-600">Automatic karaoke video creation</p>
+                            </div>
+                        </div>
+                        
+                        <button onclick="openProjectModal()" class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition">
+                            <i class="fas fa-rocket mr-2"></i>Create Your First Project
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Project Workflow (shown when project is active) -->
+                <div id="projectWorkflow" class="hidden space-y-6">
+                    <!-- Workflow steps will be inserted here -->
+                </div>
+            </div>
+
+            <!-- Right Column: Output & Controls -->
+            <div class="space-y-6">
+                <!-- Output Panel -->
+                <div class="step-card bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">
+                            <i class="fas fa-terminal mr-2 text-gray-600"></i>Output & Logs
+                        </h3>
+                        <button onclick="clearLogs()" class="text-sm text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-trash mr-1"></i>Clear
+                        </button>
+                    </div>
+                    <div id="output-panel" class="output-panel rounded-lg p-4 h-96 overflow-y-auto text-sm">
+                        <div class="log-line log-info">🚀 Karaoke Creator ready</div>
+                        <div class="log-line log-info">🎵 SeamlessM4T integration active</div>
+                        <div class="log-line log-info">🎤 Demucs vocal separation ready</div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="step-card bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                        <i class="fas fa-bolt mr-2 text-yellow-600"></i>Quick Actions
+                    </h3>
+                    <div class="space-y-2">
+                        <button onclick="openProjectModal()" id="btn-new-project"
+                            class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition text-sm">
+                            <i class="fas fa-plus mr-2"></i>New Project
+                        </button>
+                        <button onclick="playVocalAudio()" id="btn-play-vocal" disabled
+                            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition disabled:bg-gray-300 disabled:cursor-not-allowed text-sm">
+                            <i class="fas fa-play mr-2"></i>Play Vocal Audio
+                        </button>
+                        <button onclick="playKaraokeVideo()" id="btn-play-karaoke" disabled
+                            class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition disabled:bg-gray-300 disabled:cursor-not-allowed text-sm">
+                            <i class="fas fa-play-circle mr-2"></i>Play Karaoke Video
+                        </button>
+                        <button onclick="downloadTimingFile()" id="btn-download-timing" disabled
+                            class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition disabled:bg-gray-300 disabled:cursor-not-allowed text-sm">
+                            <i class="fas fa-download mr-2"></i>Download Timing File
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Project Info -->
+                <div class="step-card bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                        <i class="fas fa-info-circle mr-2 text-blue-600"></i>Project Info
+                    </h3>
+                    <div id="projectInfo" class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Current Project:</span>
+                            <span id="info-project-name" class="font-semibold">None</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Status:</span>
+                            <span id="info-status" class="font-semibold">No project</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Audio File:</span>
+                            <span id="info-audio" class="font-semibold">-</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Vocal Separation:</span>
+                            <span id="info-separation" class="font-semibold">-</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Transcription:</span>
+                            <span id="info-transcription" class="font-semibold">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include Project Creation Modal -->
+    <div id="projectModalContainer"></div>
+
+    <!-- Scripts -->
+    <script src="project-workflow.js"></script>
+    <script>
+        // Load the project creation modal
+        fetch('project-creation-modal.html')
+            .then(response => response.text())
+            .then(html => {
+                document.getElementById('projectModalContainer').innerHTML = html;
+            });
+
+        // Additional UI functions
+        function playVocalAudio() {
+            if (projectData.vocalFile) {
+                log('Playing vocal audio...', 'info');
+                // Implementation for audio playback
+            }
+        }
+
+        function playKaraokeVideo() {
+            log('Playing karaoke video...', 'info');
+            // Implementation for video playback
+        }
+
+        function downloadTimingFile() {
+            log('Downloading timing file...', 'info');
+            // Implementation for timing file download
+        }
+
+        function clearLogs() {
+            document.getElementById('output-panel').innerHTML = '';
+            log('Logs cleared', 'info');
+        }
+
+        function updateProjectInfo() {
+            document.getElementById('info-project-name').textContent = currentProject || 'None';
+            document.getElementById('info-status').textContent = currentProject ? 'Active' : 'No project';
+            document.getElementById('info-audio').textContent = projectData.audioFile ? projectData.audioFile.split('/').pop() : '-';
+            
+            const separationStatus = projectData.vocalFile ? '✅ Complete' : '⏳ Pending';
+            document.getElementById('info-separation').textContent = separationStatus;
+            
+            const transcriptionStatus = projectData.editedTranscription ? '✅ Complete' : '⏳ Pending';
+            document.getElementById('info-transcription').textContent = transcriptionStatus;
+        }
+
+        // Override the log function to also update project info
+        const originalLog = window.log;
+        window.log = function(message, type = 'info') {
+            if (originalLog) originalLog(message, type);
+            updateProjectInfo();
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            updateProjectInfo();
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Karaoke Video Creator - Enhanced with SeamlessM4T</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .step-card {
+            transition: all 0.3s ease;
+        }
+
+        .step-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .output-panel {
+            font-family: 'Courier New', monospace;
+            background: #1e1e1e;
+            color: #d4d4d4;
+        }
+
+        .log-line {
+            padding: 4px 12px;
+            border-left: 3px solid transparent;
+        }
+
+        .log-info {
+            border-left-color: #3b82f6;
+        }
+
+        .log-success {
+            border-left-color: #10b981;
+        }
+
+        .log-error {
+            border-left-color: #ef4444;
+        }
+
+        .log-warning {
+            border-left-color: #f59e0b;
+        }
+
+        .method-card {
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .method-card:hover {
+            border-color: #3b82f6;
+        }
+
+        .method-card.selected {
+            border-color: #3b82f6;
+            background: linear-gradient(135deg, #3b82f608 0%, #8b5cf608 100%);
+        }
+
+        .progress-bar {
+            transition: width 0.3s ease;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .processing {
+            animation: pulse 2s infinite;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50">
+    <div class="min-h-screen p-6">
+        <!-- Header -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800 flex items-center">
+                        <i class="fas fa-music mr-3 text-blue-600"></i>
+                        Karaoke Video Creator
+                    </h1>
+                    <p class="text-gray-600 mt-1">Enhanced with SeamlessM4T AI Transcription</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="text-right">
+                        <div class="text-sm text-gray-500">Project</div>
+                        <div id="project-name" class="font-semibold text-gray-800">Not Selected</div>
+                    </div>
+                    <button onclick="selectProject()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition">
+                        <i class="fas fa-folder-open mr-2"></i>Select Project
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Left Column: Steps -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Step 0: Audio Processing -->
+                <div class="step-card bg-white rounded-lg shadow p-6">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                                <span class="text-green-600 font-bold">0</span>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-800">Audio Processing</h3>
+                                <p class="text-sm text-gray-500">Upload audio and separate vocals with AI</p>
+                            </div>
+                        </div>
+                        <span id="status-0" class="text-2xl">⚪</span>
+                    </div>
+
+                    <div class="space-y-4">
+                        <!-- Audio Upload -->
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                <i class="fas fa-file-audio mr-2"></i>Audio File:
+                            </label>
+                            <div class="flex gap-2">
+                                <button onclick="uploadAudio()" id="btn-upload-audio"
+                                    class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition">
+                                    <i class="fas fa-upload mr-2"></i>Upload Audio
+                                </button>
+                                <input type="file" id="audioFile" accept=".mp3,.wav,.m4a" class="hidden">
+                            </div>
+                            <div id="audio-info" class="mt-2 text-sm text-gray-600 hidden"></div>
+                        </div>
+
+                        <!-- Vocal Separation -->
+                        <div class="border-t pt-4">
+                            <div class="flex items-center justify-between mb-3">
+                                <h4 class="font-semibold text-gray-800">
+                                    <i class="fas fa-microphone-alt mr-2 text-purple-600"></i>Vocal Separation
+                                </h4>
+                                <select id="separation-method" class="text-sm border border-gray-300 rounded px-2 py-1">
+                                    <option value="demucs">Demucs AI (Recommended)</option>
+                                    <option value="advanced">Advanced Filtering</option>
+                                    <option value="hybrid">Hybrid Method</option>
+                                </select>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-microphone mr-3 text-blue-600"></i>
+                                        <div>
+                                            <div class="font-semibold text-sm">Vocal Audio</div>
+                                            <div class="text-xs text-gray-500">For transcription</div>
+                                        </div>
+                                    </div>
+                                    <span id="audio-vocal-status" class="text-xl">⚪</span>
+                                </div>
+                                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-guitar mr-3 text-blue-600"></i>
+                                        <div>
+                                            <div class="font-semibold text-sm">Instrumental Audio</div>
+                                            <div class="text-xs text-gray-500">For Karaoke video</div>
+                                        </div>
+                                    </div>
+                                    <span id="audio-novocal-status" class="text-xl">⚪</span>
+                                </div>
+                            </div>
+
+                            <button onclick="separateVocals()" id="btn-separate-vocals"
+                                class="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition">
+                                <i class="fas fa-magic mr-2"></i>Separate Vocals with AI
+                            </button>
+
+                            <div id="separation-progress" class="hidden mt-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-sm font-semibold text-purple-800">
+                                        <i class="fas fa-spinner fa-spin mr-2"></i>Processing with Demucs AI...
+                                    </span>
+                                    <span id="separation-time" class="text-xs text-purple-600">0s</span>
+                                </div>
+                                <div class="w-full bg-purple-200 rounded-full h-2">
+                                    <div id="separation-progress-bar" class="bg-purple-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                                </div>
+                                <p class="text-xs text-purple-600 mt-2">This may take 1-2 minutes for best quality...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 1: Enhanced Lyrics Timing -->
+                <div class="step-card bg-white rounded-lg shadow p-6">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                <span class="text-blue-600 font-bold">1</span>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-800">Lyrics Timing</h3>
+                                <p class="text-sm text-gray-500">Choose your preferred timing method</p>
+                            </div>
+                        </div>
+                        <span id="status-1" class="text-2xl">⚪</span>
+                    </div>
+
+                    <!-- Timing Method Selection -->
+                    <div class="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg">
+                        <label class="block text-sm font-semibold text-gray-700 mb-3">
+                            <i class="fas fa-cog mr-2"></i>Select Timing Method:
+                        </label>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <label class="method-card flex items-center p-4 bg-white rounded-lg cursor-pointer hover:shadow-md">
+                                <input type="radio" name="timingMethod" value="manual" checked class="mr-3">
+                                <div class="flex-1">
+                                    <div class="font-semibold text-sm flex items-center">
+                                        <i class="fas fa-hand-pointer mr-2 text-blue-600"></i>Manual Timing
+                                    </div>
+                                    <div class="text-xs text-gray-500">Traditional manual marking</div>
+                                </div>
+                            </label>
+                            <label class="method-card flex items-center p-4 bg-white rounded-lg cursor-pointer hover:shadow-md">
+                                <input type="radio" name="timingMethod" value="seamless" class="mr-3">
+                                <div class="flex-1">
+                                    <div class="font-semibold text-sm flex items-center">
+                                        <i class="fas fa-robot mr-2 text-purple-600"></i>SeamlessM4T AI
+                                    </div>
+                                    <div class="text-xs text-gray-500">AI transcription + timing</div>
+                                </div>
+                            </label>
+                            <label class="method-card flex items-center p-4 bg-white rounded-lg cursor-pointer hover:shadow-md">
+                                <input type="radio" name="timingMethod" value="hybrid" class="mr-3">
+                                <div class="flex-1">
+                                    <div class="font-semibold text-sm flex items-center">
+                                        <i class="fas fa-balance-scale mr-2 text-green-600"></i>Hybrid (Best)
+                                    </div>
+                                    <div class="text-xs text-gray-500">AI timing + your lyrics</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Method-specific controls will be dynamically inserted here -->
+                    <div id="timing-controls"></div>
+                </div>
+
+                <!-- Step 2: Video Generation -->
+                <div class="step-card bg-white rounded-lg shadow p-6">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                                <span class="text-orange-600 font-bold">2</span>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-800">Generate Videos</h3>
+                                <p class="text-sm text-gray-500">Create karaoke and lyric videos</p>
+                            </div>
+                        </div>
+                        <span id="status-2" class="text-2xl">⚪</span>
+                    </div>
+
+                    <div class="space-y-3">
+                        <button onclick="generateKaraokeVideo()" id="btn-generate-karaoke" disabled
+                            class="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3 px-4 rounded-lg transition disabled:bg-gray-300 disabled:cursor-not-allowed">
+                            <i class="fas fa-video mr-2"></i>Generate Karaoke Video
+                        </button>
+                        <button onclick="generateLyricVideo()" id="btn-generate-lyric" disabled
+                            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition disabled:bg-gray-300 disabled:cursor-not-allowed">
+                            <i class="fas fa-film mr-2"></i>Generate Lyric Video
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Output & Logs -->
+            <div class="space-y-6">
+                <!-- Output Panel -->
+                <div class="step-card bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">
+                            <i class="fas fa-terminal mr-2 text-gray-600"></i>Output & Logs
+                        </h3>
+                        <button onclick="clearLogs()" class="text-sm text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-trash mr-1"></i>Clear
+                        </button>
+                    </div>
+                    <div id="output-panel" class="output-panel rounded-lg p-4 h-96 overflow-y-auto text-sm">
+                        <div class="log-line log-info">🚀 Enhanced Karaoke Creator ready</div>
+                        <div class="log-line log-info">🎵 SeamlessM4T integration active</div>
+                        <div class="log-line log-info">🎤 Demucs vocal separation ready</div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="step-card bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                        <i class="fas fa-bolt mr-2 text-yellow-600"></i>Quick Actions
+                    </h3>
+                    <div class="space-y-2">
+                        <button onclick="playVocalAudio()" id="btn-play-vocal" disabled
+                            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition disabled:bg-gray-300 disabled:cursor-not-allowed text-sm">
+                            <i class="fas fa-play mr-2"></i>Play Vocal Audio
+                        </button>
+                        <button onclick="playKaraokeVideo()" id="btn-play-karaoke" disabled
+                            class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition disabled:bg-gray-300 disabled:cursor-not-allowed text-sm">
+                            <i class="fas fa-play-circle mr-2"></i>Play Karaoke Video
+                        </button>
+                        <button onclick="downloadTimingFile()" id="btn-download-timing" disabled
+                            class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition disabled:bg-gray-300 disabled:cursor-not-allowed text-sm">
+                            <i class="fas fa-download mr-2"></i>Download Timing File
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Help & Info -->
+                <div class="step-card bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                        <i class="fas fa-question-circle mr-2 text-blue-600"></i>Help & Info
+                    </h3>
+                    <div class="space-y-3 text-sm">
+                        <details class="bg-blue-50 border border-blue-200 rounded-lg">
+                            <summary class="p-3 cursor-pointer hover:bg-blue-100 rounded-lg font-semibold">
+                                <i class="fas fa-microphone-alt mr-2"></i>Vocal Separation
+                            </summary>
+                            <div class="px-3 pb-3 text-gray-600">
+                                Uses Demucs AI for high-quality vocal separation. Recommended for best transcription accuracy.
+                            </div>
+                        </details>
+                        <details class="bg-purple-50 border border-purple-200 rounded-lg">
+                            <summary class="p-3 cursor-pointer hover:bg-purple-100 rounded-lg font-semibold">
+                                <i class="fas fa-robot mr-2"></i>SeamlessM4T AI
+                            </summary>
+                            <div class="px-3 pb-3 text-gray-600">
+                                Advanced AI transcription with word-level timing. Edit the transcription for perfect accuracy.
+                            </div>
+                        </details>
+                        <details class="bg-green-50 border border-green-200 rounded-lg">
+                            <summary class="p-3 cursor-pointer hover:bg-green-100 rounded-lg font-semibold">
+                                <i class="fas fa-balance-scale mr-2"></i>Hybrid Method
+                            </summary>
+                            <div class="px-3 pb-3 text-gray-600">
+                                Best of both worlds: Your exact lyrics + AI-generated timing for maximum accuracy.
+                            </div>
+                        </details>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="enhanced-lyrics-js.js"></script>
+    <script>
+        // Initialize the enhanced UI
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeEnhancedUI();
+        });
+
+        function initializeEnhancedUI() {
+            // Set up method selection handlers
+            const timingRadios = document.querySelectorAll('input[name="timingMethod"]');
+            timingRadios.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    updateMethodSelection(this.value);
+                    loadTimingControls(this.value);
+                });
+            });
+
+            // Load default controls
+            loadTimingControls('manual');
+            updateMethodSelection('manual');
+        }
+
+        function updateMethodSelection(method) {
+            // Update visual selection
+            const cards = document.querySelectorAll('.method-card');
+            cards.forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            const selectedCard = document.querySelector(`input[value="${method}"]`).closest('.method-card');
+            selectedCard.classList.add('selected');
+        }
+
+        function loadTimingControls(method) {
+            const controlsContainer = document.getElementById('timing-controls');
+            
+            // This would load the appropriate controls based on method
+            // For now, we'll show a placeholder
+            controlsContainer.innerHTML = `
+                <div class="p-4 bg-gray-50 rounded-lg text-center">
+                    <i class="fas fa-cog fa-spin text-2xl text-gray-400 mb-2"></i>
+                    <p class="text-gray-600">Loading ${method} timing controls...</p>
+                </div>
+            `;
+
+            // Load actual controls after a short delay
+            setTimeout(() => {
+                loadMethodControls(method);
+            }, 500);
+        }
+
+        function loadMethodControls(method) {
+            const controlsContainer = document.getElementById('timing-controls');
+            
+            switch(method) {
+                case 'manual':
+                    controlsContainer.innerHTML = getManualControls();
+                    break;
+                case 'seamless':
+                    controlsContainer.innerHTML = getSeamlessControls();
+                    break;
+                case 'hybrid':
+                    controlsContainer.innerHTML = getHybridControls();
+                    break;
+            }
+        }
+
+        function getManualControls() {
+            return `
+                <div class="space-y-4">
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <h4 class="font-semibold text-blue-800 mb-2">
+                            <i class="fas fa-hand-pointer mr-2"></i>Manual Timing Controls
+                        </h4>
+                        <div class="space-y-2">
+                            <button onclick="uploadLyrics()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition">
+                                <i class="fas fa-upload mr-2"></i>Upload Lyrics File
+                            </button>
+                            <button onclick="timeLyrics()" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition">
+                                <i class="fas fa-clock mr-2"></i>Start Manual Timing
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function getSeamlessControls() {
+            return `
+                <div class="space-y-4">
+                    <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                        <h4 class="font-semibold text-purple-800 mb-2">
+                            <i class="fas fa-robot mr-2"></i>SeamlessM4T AI Controls
+                        </h4>
+                        <div class="space-y-2">
+                            <button onclick="transcribeWithSeamless()" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition">
+                                <i class="fas fa-microphone mr-2"></i>Transcribe with AI
+                            </button>
+                            <button onclick="generateAITiming()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition">
+                                <i class="fas fa-play mr-2"></i>Generate AI Timing
+                            </button>
+                        </div>
+                        <div id="ai-transcription-editor" class="hidden mt-4">
+                            <textarea class="w-full h-32 p-2 border border-purple-300 rounded" placeholder="Edit AI transcription here..."></textarea>
+                            <button onclick="saveEditedTranscription()" class="mt-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-1 px-3 rounded text-sm">
+                                <i class="fas fa-save mr-1"></i>Save Edits
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function getHybridControls() {
+            return `
+                <div class="space-y-4">
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <h4 class="font-semibold text-green-800 mb-2">
+                            <i class="fas fa-balance-scale mr-2"></i>Hybrid Method (Recommended)
+                        </h4>
+                        <p class="text-sm text-green-600 mb-3">Combines your exact lyrics with AI-generated timing for maximum accuracy</p>
+                        <div class="space-y-2">
+                            <button onclick="uploadLyrics()" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition">
+                                <i class="fas fa-upload mr-2"></i>Upload Your Lyrics
+                            </button>
+                            <button onclick="generateHybridTiming()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition">
+                                <i class="fas fa-play mr-2"></i>Generate Hybrid Timing
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Placeholder functions for the enhanced UI
+        function selectProject() {
+            log('Project selection coming soon...', 'info');
+        }
+
+        function uploadAudio() {
+            document.getElementById('audioFile').click();
+        }
+
+        function generateKaraokeVideo() {
+            log('Generating karaoke video with enhanced timing...', 'info');
+        }
+
+        function generateLyricVideo() {
+            log('Generating lyric video with enhanced timing...', 'info');
+        }
+
+        function playVocalAudio() {
+            log('Playing vocal audio...', 'info');
+        }
+
+        function playKaraokeVideo() {
+            log('Playing karaoke video...', 'info');
+        }
+
+        function downloadTimingFile() {
+            log('Downloading timing file...', 'info');
+        }
+
+        function clearLogs() {
+            document.getElementById('output-panel').innerHTML = '';
+            log('Logs cleared', 'info');
+        }
+
+        function log(message, type = 'info') {
+            const outputPanel = document.getElementById('output-panel');
+            const timestamp = new Date().toLocaleTimeString();
+            const logClass = `log-line log-${type}`;
+            const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 'ℹ️';
+            
+            outputPanel.innerHTML += `<div class="${logClass}">${timestamp} ${icon} ${message}</div>`;
+            outputPanel.scrollTop = outputPanel.scrollHeight;
+        }
+
+        function updateStepStatus(step, status) {
+            const statusElement = document.getElementById(`status-${step}`);
+            const statusMap = {
+                'white': '⚪',
+                'green': '🟢',
+                'red': '🔴',
+                'yellow': '🟡'
+            };
+            statusElement.textContent = statusMap[status] || '⚪';
+        }
+    </script>
+</body>
+
+</html>
